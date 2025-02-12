@@ -1,8 +1,8 @@
 # doubleintegration
 
-1.	Anomalies_bio
-a.	To calculate zscore anomalies
-b.	Output: zscore_anomalies_3taxazp_28MAY
+1.	Anomalies_bio  
+a.	To calculate zscore anomalies  
+b.	Output: zscore_anomalies_3taxazp_28MAY  
 
 2.	calculateARcoefficient_drivers_v3
 a.	detrending time series 
