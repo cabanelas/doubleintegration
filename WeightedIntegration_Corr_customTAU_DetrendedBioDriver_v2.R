@@ -67,8 +67,13 @@ zscore <- zscore[complete.cases(zscore$Anomaly_yr), ]
 #}
 
 ## ------------------------------------------ ##
-#     Function for integrations -----
+#     Function for weighted integrations -----
 ## ------------------------------------------ ##
+# weighted average
+# exponential weighing - weights decrease for older data points
+# i think exponential moving average should be good (vs weighted moving av)
+# w = e^(t-t_i)/lamba; where lambda controls the decay
+
 calculateIntegrations = function(data, tau, f = function(x) {mean(x, na.rm = T)}) {
   for (n in names(data)[-1]) {
     data[[paste0(n,'Norm')]] = (data[[n]] - mean(data[[n]], na.rm = T)) / sd(data[[n]]) #norm
@@ -77,11 +82,53 @@ calculateIntegrations = function(data, tau, f = function(x) {mean(x, na.rm = T)}
     
     for (i in 2:nrow(data)) {
       k = data[,1] <= data[i,1] & data[,1] > data[i,1] - tau * 86400 #secs
-      data[[paste0(n,'Int')]][i] = f(data[[paste0(n,'Norm')]][k])
+      
+      time_diff = data[i, 1] - data[k, 1] # Time difference (recent values have smaller diffs)
+      weights = exp(-time_diff / lambda)  # Exponential decay weights
+      
+      #data[[paste0(n,'Int')]][i] = f(data[[paste0(n,'Norm')]][k])
+      data[[paste0(n, 'Int')]][i] = f(data[[paste0(n, 'Norm')]][k], weights)  # Weighted mean
     }
   }
   data
 }
+
+#option 1
+calculateIntegrations = function(data, tau, lambda = tau * 86400, f = function(x, w) { sum(x * w, na.rm = T) / sum(w, na.rm = T) }) {
+  for (n in names(data)[-1]) {
+    data[[paste0(n, 'Norm')]] = (data[[n]] - mean(data[[n]], na.rm = T)) / sd(data[[n]]) # Normalize
+    
+    data[[paste0(n, 'Int')]] = NA
+    
+    for (i in 2:nrow(data)) {
+      k = data[, 1] <= data[i, 1] & data[, 1] > data[i, 1] - tau * 86400 # Select values within tau window
+      
+      time_diff = data[i, 1] - data[k, 1]  # Time difference (recent values have smaller diffs)
+      weights = exp(-time_diff / lambda)  # Exponential decay weights
+      
+      data[[paste0(n, 'Int')]][i] = f(data[[paste0(n, 'Norm')]][k], weights)  # Weighted mean
+    }
+  }
+  data
+}
+
+#option 2
+calculateIntegrations = function(data, tau, f = function(x, w) {sum(x * w, na.rm = T) / sum(w, na.rm = T)}) {
+  for (n in names(data)[-1]) {
+    data[[paste0(n,'Norm')]] = (data[[n]] - mean(data[[n]], na.rm = T)) / sd(data[[n]]) # norm
+    
+    data[[paste0(n,'Int')]] = NA
+    
+    for (i in 2:nrow(data)) {
+      k = data[,1] <= data[i,1] & data[,1] > data[i,1] - tau * 86400 # secs
+      w = exp(-(data[i,1] - data[,1][k]) / (tau * 86400 / log(2))) # weights
+      data[[paste0(n,'Int')]][i] = f(data[[paste0(n,'Norm')]][k], w)
+    }
+  }
+  data
+}
+
+
 
 # tau values for each taxa
 tau_values <- c(
