@@ -1,5 +1,3 @@
-# doubleintegration
-
 # Double Integration Analysis
 
 This repository contains code and analyses for testing the Double Integration Hypothesis (DIH) proposed by Di Lorenzo & Ohman (2013) across four Long-Term Ecological Research (LTER) sites: California Current Ecosystem (CCE), Northern Gulf of Alaska (NGA), Palmer Station Antarctica (PAL), and Northeast U.S. Shelf (NES). This work is part of the LTER Pelagic Community Structure Working Group, which investigates interannual variability and long-term change in pelagic ecosystems. Specifically, this project examines how marine ecosystems respond to both cyclic and long-term environmental changes using comparative data from multiple LTER sites.
