@@ -90,7 +90,7 @@ calculateIntegrations = function(data, tau = 180,
     data[[paste0(n,'Norm')]] = (data[[n]] - mean(data[[n]], na.rm = T)) / sd(data[[n]]) # norm
     
     data[[paste0(n,'Int')]] = NA
-    #data[[paste0(n,'DInt')]] = NA
+    data[[paste0(n,'DInt')]] = NA
     
     for (i in 2:nrow(data)) {
       #first integration
@@ -100,23 +100,23 @@ calculateIntegrations = function(data, tau = 180,
       data[[paste0(n,'Int')]][i] = f(data[[paste0(n,'Norm')]][k1], w1)
       
       # second integration
-      #k2 = data[,1] <= data[i,1] & data[,1] > data[i,1] - tau * 86400
-      #tdiff2 = as.numeric(data[i,1] - data[k2,1])
-      #w2 = exp(-tdiff2 / (tau * 86400 / log(2)))
-      #data[[paste0(n, 'DInt')]][i] = f(data[[paste0(n, 'Int')]][k2], w2)
+      k2 = data[,1] <= data[i,1] & data[,1] > data[i,1] - tau * 86400
+      tdiff2 = as.numeric(data[i,1] - data[k2,1])
+      w2 = exp(-tdiff2 / (tau * 86400 / log(2)))
+      data[[paste0(n, 'DInt')]][i] = f(data[[paste0(n, 'Int')]][k2], w2)
     }
     
-    par(mfrow = c(2,1))
+    par(mfrow = c(3,1))
     plot(data[,1], data[[n]], type = 'l', ylab = n, xlab = '') #original signal
     plot(data[,1], data[[paste0(n,'Int')]], type = 'l', ylab = paste0(n, 'Int'), xlab = '') #integration1
-    #plot(data[,1], data[[paste0(n, 'DInt')]], type = 'l', ylab = paste0(n, ' DInt')) #integration2
+    plot(data[,1], data[[paste0(n, 'DInt')]], type = 'l', ylab = paste0(n, ' DInt')) #integration2
   }
   data
 }
 
 pdoInt <- calculateIntegrations(PDO) #if your R window is too small may give err
 pdoInt$time <- as.Date(pdoInt$time)
-
+#write.csv(pdoInt, "output/NGA/PDO_NGA_integrated.csv")
 ## ------------------------------------------ ##
 #     Correlations -----
 ## ------------------------------------------ ##
