@@ -1,33 +1,28 @@
 # Double Integration Analysis
 
-This repository contains code and analyses for testing the Double Integration Hypothesis (DIH) proposed by Di Lorenzo & Ohman (2013) across four Long-Term Ecological Research (LTER) sites: California Current Ecosystem (CCE), Northern Gulf of Alaska (NGA), Palmer Station Antarctica (PAL), and Northeast U.S. Shelf (NES). This work is part of the LTER Pelagic Community Structure Working Group, which investigates interannual variability and long-term change in pelagic ecosystems. Specifically, this project examines how marine ecosystems respond to both cyclic and long-term environmental changes using comparative data from multiple LTER sites.
+## Pelagic Community Structure: Interannual Variability and Long-Term Change in Pelagic Community Structure Across a Latitudinal Gradient
 
+### Investigating Lagged and Cumulative Biological Responses
 
+This repository contains scripts to test the Double Integration Hypothesis (DIH) proposed by Di Lorenzo & Ohman (2013) across four Long-Term Ecological Research (LTER) sites: California Current Ecosystem (CCE), Northern Gulf of Alaska (NGA), Palmer Station Antarctica (PAL), and Northeast U.S. Shelf (NES). This work is part of the LTER Pelagic Community Structure Working Group, which investigates interannual variability and long-term change in pelagic ecosystems. Specifically, this project examines how marine ecosystems respond to both cyclic and long-term environmental changes using comparative data from multiple LTER sites.
 
-## Scripts 
+The double integration hypothesis posits that marine populations respond to stochastic environmental forcing through cumulative integration, potentially leading to apparent state changes (Di Lorenzo & Ohman 2013). This analysis aims to identify whether such dynamics are detectable in long-term biological datasets across contrasting ecosystems.
 
-1.	Anomalies_bio  
-a.	To calculate zscore anomalies  
-b.	Output: zscore_anomalies_3taxazp_28MAY  
+## This repo:
+* Perform double integration of normalized biological anomalies.
+* Calculate correlations between biological time series and physical drivers.
+* Compute autoregressive (AR) coefficients from biological and driver (large-scale indices) time series for the bootstrapping analysis.
+* Bootstrap correlations to assess robustness of relationships.
 
-2.	calculateARcoefficient_drivers_v3  
-a.	detrending time series   
-b.	calculating AR coefficient   
-c.	Output: detrended_driver_time_series.csv; AR_coef_drivers_allAR1_afterDetrend.csv  
+## Run scripts in the following order for best results
+Scripts should be run in the following order per site:
+1. ARcoef_driver_SITE.R
+* Calculates AR(1) coefficients for physical drivers (e.g., PDO, MEI, ONI, AMO).
+2. ARcoef_bio_SITE.R
+* Calculates AR(1) coefficients for biological time series.
+3. weightdoubleintegration_SITE.R
+* Performs integrations of normalized biological data.
+4. bootstrap_SITE.R
+* Bootstrapping.
 
-3.	calculateARcoefficient_bio_v3  
-a.	detrending time series   
-b.	calculating AR coefficient   
-c.	Output: detrended_BIOLOGY_time_series.csv; AR_coef_bio_allAR1_afterDetrend_wSampleSize.csv  
-
-4.	Integration_Corr_customTAU_DetrendedBioDriver_v2  
-a.	Integration, correlation, pvalues, plots  
-b.	Output: IntCorrelations_DetrendBioDriver_6090240TAU.csv  
-c.	Figures  
-
-5.	Boot_parallel_customTAU  
-a.	Bootstrapping  
-b.	Output: results_boot_6090240TAU_RAW.csv  
-
-6.	Final_plots_Conv_Boot_pvalues  
-a.	Final plots with conventional and bootstrapped pvalues  
+Replace SITE with the target ecosystem: CCE, PAL, or NGA.
