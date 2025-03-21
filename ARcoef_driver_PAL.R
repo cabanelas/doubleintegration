@@ -6,7 +6,7 @@
 ################################################################################
 ##### PAL LTER
 ##### Driver = Multivariate ENSO Index (MEI)
-
+##### 1983 - 2024
 ## Double Integration Analysis PAL
 # Script #1 : ARcoef_driver_PAL
 
@@ -19,23 +19,21 @@
 ## ------------------------------------------ ##
 #            Packages -----
 ## ------------------------------------------ ##
-library(forecast) #v8.21
+library(forecast) #v8.21; Arima()
 library(tseries) #v0.10.54; ADF test
-library(urca) #v1.3.3
-library(astsa) #v2.1
+library(astsa) #v2.1; acf2
 library(tidyverse)
+#library(urca) #v1.3.3
 
 ## ------------------------------------------ ##
 #            DATA -----
 ## ------------------------------------------ ##
-
 MEI <- read.csv(file.path("raw", "PAL",
                               "MEI.csv"))
 
 ## ------------------------------------------ ##
 #            TIDY -----
 ## ------------------------------------------ ##
-
 # fix date
 MEI$DATE <- as.Date(MEI$DATE, format = "%m/%d/%y")
 
@@ -44,10 +42,10 @@ MEI$Year <- as.numeric(format(MEI$DATE, "%Y"))
 MEI$Month <- as.numeric(format(MEI$DATE, "%m"))
 
 MEI <- MEI %>% 
-  filter(Year > 1982)
+  filter(Year > 1982) #filtering 10 yrs before bio data 
 
 # create time series object
-MEIts <- ts(MEI$MEI, start = c(1983, 1), frequency = 12) #1979
+MEIts <- ts(MEI$MEI, start = c(1983, 1), frequency = 12) 
 
 head(MEI)
 head(MEIts)
@@ -120,18 +118,6 @@ par(mfrow = c(2, 1))
 acf2(MEI_residuals)  # replaces Acf and pacf
 
 par(mfrow = c(1, 1))
-## ------------------------------------------ ##
-
-
-# Box-Pierce test
-lb_test <- Box.test(MEI_residuals, lag = log(length(MEI_residuals)))
-print(lb_test)
-
-# Ljung-Box test for residual independence
-Box.test(MEI_residuals, lag = log(length(MEI_residuals)), type = "Ljung-Box")
-#pvalue < 0.05
-
-## residuals are correlated so may need different ?????????????
 
 ## ------------------------------------------ ##
 # 3) Export AR coefficient
@@ -147,20 +133,3 @@ ar_info_df <- data.frame(ts_name = "MEI",
 print(ar_info_df)
 
 #write.csv(ar_info_df, "output/PAL/AR_coef_MEIdriver_PAL.csv")
-
-## ------------------------------------------ ##
-
-## ------------------------------------------ ##
-
-rolling_variances <- zoo::rollapply(MEIts, width = 12, FUN = var, align = "right", fill = NA)
-# Plot the rolling variances over time
-plot(rolling_variances, type = "l", 
-     xlab = "Time", 
-     ylab = "Variance", 
-     main = "AO Rolling Variance")
-
-# can add a horizontal line to visualize the average variance
-abline(h = mean(rolling_variances, na.rm = TRUE), col = "red", lty = 2)
-
-# variance 
-#bartlett.test() or fligner.test()

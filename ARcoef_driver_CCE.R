@@ -6,11 +6,11 @@
 ################################################################################
 ##### CCE LTER
 ##### Driver = Pacific Decadal Oscillation PDO
-
+##### 1941
 ## Double Integration Analysis CCE
 # Script #1 : ARcoef_driver_CCE
 
-# script to calculate AR coefficients of driver 
+# script to calculate AR coefficient of driver 
 
 ## STEP 1 of Monte Carlo analysis
 # Step 1 - estimate autoregression coeff from the original data/signals to be
@@ -19,16 +19,15 @@
 ## ------------------------------------------ ##
 #            Packages -----
 ## ------------------------------------------ ##
-library(forecast) #v8.21
+library(forecast) #v8.21; Arima()
 library(tseries) #v0.10.54; ADF test
-library(urca) #v1.3.3
-library(astsa) #v2.1
+library(astsa) #v2.1; acf2
 library(tidyverse)
+#library(urca) #v1.3.3
 
 ## ------------------------------------------ ##
 #            DATA -----
 ## ------------------------------------------ ##
-
 PDO <- read.csv(file.path("raw", "CCE",
                           "PDO.csv"))
 
@@ -48,12 +47,11 @@ PDO$Date <- as.Date(paste(PDO$Year, PDO$month, "01"),
 
 PDO$month <- match(PDO$month, month.abb)
 
-# Euphausiid data starts year 1951
 PDO <- PDO %>% 
-  filter(pdo < 99 & Year > 1940)
+  filter(pdo < 99 & Year > 1940) #filtering 10 yrs before bio data
 
 # create time series object
-PDOts <- ts(PDO$pdo, start = c(1940, 1), frequency = 12) #1854
+PDOts <- ts(PDO$pdo, start = c(1940, 1), frequency = 12)
 
 head(PDO)
 head(PDOts)
