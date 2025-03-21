@@ -8,7 +8,7 @@
 # Script #3 : ARcoef_bio_CCE
 
 # script to calculate AR coefficient of the biology time series
-# N. simplex 
+# Nyctiphanes simplex 1951-2021
 
 ## STEP 1 of Monte Carlo analysis
 # Step 1 - estimate autoregression coeff from the original data/signals to be
@@ -19,29 +19,31 @@
 ## ------------------------------------------ ##
 library(tidyverse) #v2.0.0
 library(here) #v1.0.1
-library(forecast) #v8.21
+library(forecast) #v8.21; Arima()
 library(tseries) #v0.10.54; ADF test
-library(urca) #v1.3.3
-#library(tibble) #v3.2.1
-#library(purrr) #v1.0.2
-#library(tidyr) #v1.3.1
-library(astsa) #v2.1
+library(astsa) #v2.1; acf2 (optional)
+#library(urca) #v1.3.3
 
 ## ------------------------------------------ ##
 #            Data -----
 ## ------------------------------------------ ##
 bioTS <- read.csv(file.path("raw",
                             "CCE",
-                            "Euphausiids_CCE.csv")) %>%
-  rename(year = Year,
-         anomaly_yr = Anomaly_yr)
+                            "nsimplex_CCE.csv")) %>%
+  mutate(taxa = "Nsimplex") %>%
+  rename(year = Year)
 
 ## ------------------------------------------ ##
 #            Tidy -----
 ## ------------------------------------------ ##
-bioTS$date <- as.Date(paste0(bioTS$year, "-03-01"))
-#bioTS$year <- format(bioTS$date, "%Y")
 bioTS$year <- as.numeric(bioTS$year)
+
+# calc anomalies
+bioTS$Yc_mean <- mean(bioTS$Abundance)
+bioTS$Yc_sd <- sqrt(sum((bioTS$Abundance - mean(bioTS$Abundance, na.rm = TRUE))^2, na.rm = TRUE) / 
+                      sum(!is.na(bioTS$Abundance))) #pop mean; not sample..
+#zscored
+bioTS$anomaly_yr <- (bioTS$Abundance - bioTS$Yc_mean)/bioTS$Yc_sd
 
 #need to add the missing years 
 #no sampling 1967, 1968, 1971, 1973 and 2020

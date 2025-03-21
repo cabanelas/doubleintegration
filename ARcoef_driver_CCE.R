@@ -21,7 +21,7 @@
 ## ------------------------------------------ ##
 library(forecast) #v8.21; Arima()
 library(tseries) #v0.10.54; ADF test
-library(astsa) #v2.1; acf2
+library(astsa) #v2.1; acf2 (optional)
 library(tidyverse)
 #library(urca) #v1.3.3
 

@@ -6,7 +6,7 @@
 ################################################################################
 ##### NGA LTER
 ##### Driver = Oceanic Nino Index = ONI
-
+##### 1988
 ## Double Integration Analysis NGA
 # Script #1 : ARcoef_ONIdriver_NGA
 
@@ -19,16 +19,15 @@
 ## ------------------------------------------ ##
 #            Packages -----
 ## ------------------------------------------ ##
-library(forecast) #v8.21
+library(forecast) #v8.21; Arima()
 library(tseries) #v0.10.54; ADF test
-library(urca) #v1.3.3
-library(astsa) #v2.1
+library(astsa) #v2.1; acf2 (optional)
 library(tidyverse)
+#library(urca) #v1.3.3
 
 ## ------------------------------------------ ##
 #            DATA -----
 ## ------------------------------------------ ##
-
 ONI <- read.csv(file.path("raw", "NGA",
                           "ONI.csv"))
 
@@ -56,9 +55,8 @@ ONI <- ONI %>%
 ONI$Date <- as.Date(paste(ONI$YR, ONI$month, "01"), 
                     format = "%Y %m %d")
 
-# NGA data starts year 1998
 ONI <- ONI %>% 
-  filter(YR > 1987)
+  filter(YR > 1987) #filtering 10 yrs before bio data 
 
 # create time series object
 ONIts <- ts(ONI$ANOM, start = c(1988, 1), frequency = 12)

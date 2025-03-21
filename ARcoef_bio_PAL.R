@@ -19,13 +19,10 @@
 ## ------------------------------------------ ##
 library(tidyverse) #v2.0.0
 library(here) #v1.0.1
-library(forecast) #v8.21
+library(forecast) #v8.21; Arima()
 library(tseries) #v0.10.54; ADF test
-library(urca) #v1.3.3
-#library(tibble) #v3.2.1
-#library(purrr) #v1.0.2
-#library(tidyr) #v1.3.1
-library(astsa) #v2.1
+library(astsa) #v2.1; acf2 (optional)
+#library(urca) #v1.3.3
 
 ## ------------------------------------------ ##
 #            Data -----
@@ -39,12 +36,10 @@ bioTS <- read.csv(file.path("raw",
 ## ------------------------------------------ ##
 #            Tidy -----
 ## ------------------------------------------ ##
-bioTS$date <- as.Date(paste0(bioTS$year, "-03-01"))
-bioTS$year <- format(bioTS$date, "%Y")
-bioTS$year <- as.numeric(bioTS$year)
+bioTS$year <- as.numeric(format(as.Date(paste0(bioTS$year, "-03-01")), "%Y"))
 
 #linear interpolation 
-#these analyses dont like NAs
+#these analyses dont like NAs - 2021 & 2022 have NAs
 bioTS$anomaly_yr <- approx(bioTS$year, 
                            bioTS$anomaly_yr,
                            xout = bioTS$year)$y

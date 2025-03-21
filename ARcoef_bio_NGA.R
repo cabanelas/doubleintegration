@@ -8,7 +8,7 @@
 # Script #3 : ARcoef_bio_NGA
 
 # script to calculate AR coefficient of the biology time series
-# NeocalanusCrist
+# Neocalanus cristatus
 
 ## STEP 1 of Monte Carlo analysis
 # Step 1 - estimate autoregression coeff from the original data/signals to be
@@ -19,10 +19,9 @@
 ## ------------------------------------------ ##
 library(tidyverse) #v2.0.0
 library(here) #v1.0.1
-library(forecast) #v8.21
+library(forecast) #v8.21; Arima()
 library(tseries) #v0.10.54; ADF test
-library(urca) #v1.3.3
-library(astsa) #v2.1
+library(astsa) #v2.1; acf2 (optional)
 
 ## ------------------------------------------ ##
 #            Data -----
@@ -35,16 +34,17 @@ bioTS <- read.csv(file.path("raw",
 ## ------------------------------------------ ##
 #            Anomalies -----
 ## ------------------------------------------ ##
-bioTS$meanAbu <- mean(bioTS$LogMean)
+bioTS$Yc_mean <- mean(bioTS$LogMean)
+bioTS$Yc_sd <- sd(bioTS$LogMean)
 #zscore anomaly 
-bioTS$anomaly_yr <- (bioTS$LogMean - bioTS$meanAbu)/bioTS$Log.STD
+bioTS$anomaly_yr <- (bioTS$LogMean - bioTS$Yc_mean)/bioTS$Yc_sd
 
 ## ------------------------------------------ ##
 #            Tidy -----
 ## ------------------------------------------ ##
 #remove S from year col
 bioTS$year <- as.numeric(gsub("S", "", bioTS$year))
-bioTS$date <- as.Date(paste0(bioTS$year, "-03-01"))
+#bioTS$date <- as.Date(paste0(bioTS$year, "-03-01"))
 
 ## ------------------------------------------ ##
 #            Make ts object -----
@@ -118,6 +118,7 @@ par(mfrow = c(2, 1))
 acf2(bio_residuals)  # replaces Acf and pacf
 
 par(mfrow = c(1, 1))
+#these dont look great?
 
 ## ------------------------------------------ ##
 # 3) Export AR coefficient
