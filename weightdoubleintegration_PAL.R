@@ -8,7 +8,7 @@
 ##### Driver = Multivariate ENSO Index (MEI)
 ##### Biology = Limacina rangii
 ##### 1 year integration
-##### season = winter
+##### season = summer
 ##### years = 1993 - 2023
 
 #######   ----    Double Integration Calculations:
@@ -133,7 +133,7 @@ pval2 <- cor.test(limacina$Limacina, interpolated_int1)$p.value
 
 wcor_PAL <- data.frame(site = "PAL",
                        taxa = "limacina",
-                       season = "winter",
+                       season = "summer",
                        cor_Norm = cor1, 
                        cor_Int = cor2, 
                        #cor_DouInt = cor_DouInt, 
@@ -143,6 +143,7 @@ wcor_PAL <- data.frame(site = "PAL",
 )
 wcor_PAL
 #write.csv(wcor_PAL, "output/PAL/weightedCor_PAL.csv")
+
 ## ------------------------------------------ ##
 #     Plots -----
 ## ------------------------------------------ ## 
@@ -257,17 +258,14 @@ Int2Plot <- ggplot() +
   # Driver time series (Integrated MEI)
   geom_line(data = int2, aes(x = time, y = meiDInt, color = "MEI"), 
             linewidth = 1.2) +
-  
   # Limacina time series (Abundance)
   geom_line(data = limacina, aes(x = date, y = Limacina, color = "Abundance"), 
             linewidth = 1.2) +
-  
-  # Annotate correlation coefficient
+  # annotate correlation coefficient
   annotate("text", x = as.Date("1990-01-01"), y = 3,
            label = sprintf("rho == %.4f", cor3),
            parse = TRUE, hjust = 0, vjust = 1, color = "black", size = 5.5) +
-  
-  # Annotate p-value
+  # annotate p-value
   annotate("text", x = as.Date("1990-01-01"), y = 2.4,
            label = if (pval3 < 0.001) {
              as.expression(bquote(italic(P) < 0.001))
@@ -275,8 +273,6 @@ Int2Plot <- ggplot() +
              as.expression(bquote(italic(P) == .(round(pval3, 3))))
            },
            parse = TRUE, hjust = 0, vjust = 1, color = "black", size = 5.5) +
-  
-  # Theme settings
   theme_bw() +
   theme(axis.title.x = element_blank(),
         axis.title.y = element_text(size = 19, color = "black", face = "bold"),
@@ -285,16 +281,13 @@ Int2Plot <- ggplot() +
         legend.text = element_text(size = 15, face = "bold"),
         legend.key.size = unit(2, "lines"),
         plot.title = element_blank()) +
-  
-  # X-axis settings
+  # x-axis settings
   scale_x_date(breaks = seq(as.Date("1990-01-01"), as.Date("2025-01-01"), by = "10 years"),
                date_labels = "%Y", expand = c(0, 0)) +
   coord_cartesian(xlim = as.Date(c("1990-01-01", "2025-01-01"))) +
-  
-  # Manual color legend
+  # manual color legend
   scale_color_manual(values = c("MEI" = "red", "Abundance" = "blue")) +
-  
-  # Y-axis label
+  # y-axis label
   labs(y = "Double Integrated MEI")
 
 Int2Plot <- Int2Plot + theme(legend.position = "none")
