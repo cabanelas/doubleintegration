@@ -1,10 +1,9 @@
 ################################################################################
 #############          Pelagic Synthesis           #############################
-#############                 2024                 #############################
+#############                 2025                 #############################
 #############          Double Integration          #############################
 ## by: Alexandra Cabanelas 
 ################################################################################
-
 ## NGA 
 ## Data exploration 
 
@@ -66,12 +65,12 @@ zp_all <- zp_all %>%
   ) %>%
   ungroup()
 
+#write.csv(zp_all, "raw/NGA/allzooplankton_NGA.csv")
 ## ------------------------------------------ ##
 #            Plot TS -----
 ## ------------------------------------------ ##
-#dir.create("plots", showWarnings = FALSE)
 for (taxon in unique(zp_all$taxa)) {
-  
+
   p <- zp_all %>%
     filter(taxa == taxon) %>%
     ggplot(aes(x = Year, y = Anomaly_yr)) + 
@@ -84,9 +83,13 @@ for (taxon in unique(zp_all$taxa)) {
       y = "Anomaly (Z-score)",
       x = "Year"
     ) +
-    theme_minimal()
+    theme_minimal() +
+    theme(axis.text.x = element_text(size = 15, color = "black"))
   
   print(p)
-  #ggsave(filename = paste0("plots/", taxon, "_anomaly_timeseries.png"),
-  #       plot = p, width = 6, height = 5)
+  
+  #ggsave(filename = paste0("figures/NGA/", 
+  #                         taxon, "_anomaly_timeseries.png"),
+  #       plot = p, width = 6, height = 5, 
+  #       bg = "white")
 }
