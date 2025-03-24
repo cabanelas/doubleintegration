@@ -79,7 +79,7 @@ calculateIntegrations = function(data, tau = 365*1,
     data[[paste0(n,'Norm')]] = (data[[n]] - mean(data[[n]], na.rm = T)) / sd(data[[n]]) # norm
     
     data[[paste0(n,'Int')]] = NA
-    data[[paste0(n,'DInt')]] = NA
+    #data[[paste0(n,'DInt')]] = NA
     
     for (i in 2:nrow(data)) {
       #first integration
@@ -89,16 +89,16 @@ calculateIntegrations = function(data, tau = 365*1,
       data[[paste0(n,'Int')]][i] = f(data[[paste0(n,'Norm')]][k1], w1)
       
       # second integration
-      k2 = data[,1] <= data[i,1] & data[,1] > data[i,1] - tau * 86400
-      tdiff2 = as.numeric(data[i,1] - data[k2,1])
-      w2 = exp(-tdiff2 / (tau * 86400 / log(2)))
-      data[[paste0(n, 'DInt')]][i] = f(data[[paste0(n, 'Int')]][k2], w2)
+      #k2 = data[,1] <= data[i,1] & data[,1] > data[i,1] - tau * 86400
+      #tdiff2 = as.numeric(data[i,1] - data[k2,1])
+      #w2 = exp(-tdiff2 / (tau * 86400 / log(2)))
+      #data[[paste0(n, 'DInt')]][i] = f(data[[paste0(n, 'Int')]][k2], w2)
     }
     
-    par(mfrow = c(3,1))
+    par(mfrow = c(2,1))
     plot(data[,1], data[[n]], type = 'l', ylab = n, xlab = '') #original signal
     plot(data[,1], data[[paste0(n,'Int')]], type = 'l', ylab = paste0(n, 'Int'), xlab = '') #integration1
-    plot(data[,1], data[[paste0(n, 'DInt')]], type = 'l', ylab = paste0(n, ' DInt')) #integration2
+    #plot(data[,1], data[[paste0(n, 'DInt')]], type = 'l', ylab = paste0(n, ' DInt')) #integration2
   }
   data
 }
@@ -154,11 +154,11 @@ wcor_PAL
   geom_line(data = limacina, aes(x = date, y = Limacina, color = "Abundance"), 
             linewidth = 1.2) +
   # annotate correlation coefficient
-  annotate("text", x = as.Date("1990-01-01"), y = 3,
+  annotate("text", x = as.Date("1993-01-01"), y = 3,
            label = sprintf("r == %.2f", cor1),
            parse = TRUE, hjust = 0, vjust = 1, color = "black", size = 5.5) +
   # annotate p-value
-  annotate("text", x = as.Date("1990-01-01"), y = 2.4,
+  annotate("text", x = as.Date("1993-01-01"), y = 2.4,
            label = if (pval1 < 0.001) {
              as.expression(bquote(italic(p) < 0.001))
            } else {
@@ -193,11 +193,11 @@ wcor_PAL
   geom_line(data = limacina, aes(x = date, y = Limacina, color = "Abundance"), 
             linewidth = 1.2) +
   # annotate correlation coefficient
-  annotate("text", x = as.Date("1990-01-01"), y = 3,
+  annotate("text", x = as.Date("1993-01-01"), y = 3,
            label = sprintf("r == %.2f", cor2),
            parse = TRUE, hjust = 0, vjust = 1, color = "black", size = 5.5) +
   # annotate p-value
-  annotate("text", x = as.Date("1990-01-01"), y = 2.4,
+  annotate("text", x = as.Date("1993-01-01"), y = 2.4,
            label = if (pval2 < 0.001) {
              as.expression(bquote(italic(p) < 0.001))
            } else {
@@ -246,10 +246,10 @@ title <- ggdraw() +
                         rel_heights = c(0.07, 0.8, 0.07))) 
 
 # export and save plot
-ggsave("figures/PAL/conventional_PAL_Lr_summer.png", 
-       final_plot, 
-       width = 8, height = 8, dpi = 300, 
-       bg = "white")
+#ggsave("figures/PAL/conventional_PAL_Lr_summer.png", 
+#       final_plot, 
+#       width = 8, height = 8, dpi = 300, 
+#       bg = "white")
 ##################################################################
 
 
