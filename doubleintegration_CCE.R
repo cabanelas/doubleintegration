@@ -179,7 +179,7 @@ wcor_CCE
             linewidth = 1.2) +
   # annotate correlation coefficient
   annotate("text", x = as.Date("1960-01-01"), y = 3,
-           label = sprintf("rho == %.4f", cor1),
+           label = sprintf("r == %.2f", cor1),
            parse = TRUE, hjust = 0, vjust = 1, color = "black", size = 5.5) +
   # annotate p-value
   annotate("text", x = as.Date("1960-01-01"), y = 2.4,
@@ -219,7 +219,7 @@ wcor_CCE
             linewidth = 1.2) +
   # annotate correlation coefficient
   annotate("text", x = as.Date("1960-01-01"), y = 3,
-           label = sprintf("rho == %.4f", cor2),
+           label = sprintf("r == %.2f", cor2),
            parse = TRUE, hjust = 0, vjust = 1, color = "black", size = 5.5) +
   # annotate p-value
   annotate("text", x = as.Date("1960-01-01"), y = 2.4,
@@ -288,7 +288,7 @@ Int2Plot <- ggplot() +
             linewidth = 1.2) +
   # annotate correlation coefficient
   annotate("text", x = as.Date("1960-01-01"), y = 3,
-           label = sprintf("rho == %.4f", cor3),
+           label = sprintf("r == %.2f", cor3),
            parse = TRUE, hjust = 0, vjust = 1, color = "black", size = 5.5) +
   # annotate p-value
   annotate("text", x = as.Date("1960-01-01"), y = 2.4,

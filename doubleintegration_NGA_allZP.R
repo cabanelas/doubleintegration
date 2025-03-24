@@ -203,7 +203,7 @@ for (group_name in names(correlation_list)) {
                                          color = "Abundance"), linewidth = 1.2) +
     # annotate correlation coefficient
     annotate("text", x = as.Date("2005-01-01"), y = 3,
-             label = sprintf("rho == %.2f", round(cor_vals[1], 2)),
+             label = sprintf("r == %.2f", round(cor_vals[1], 2)),
              parse = TRUE, hjust = 0, vjust = 1, color = "black", size = 5.5) +
     # annotate p-value
     annotate("text", x = as.Date("2005-01-01"), y = 2.4,
@@ -244,7 +244,7 @@ for (group_name in names(correlation_list)) {
                                          color = "Abundance"), size = 1.2) +
     # annotate correlation coefficient
     annotate("text", x = as.Date("2005-01-01"), y = 3,
-             label = sprintf("rho == %.2f", round(cor_vals[2], 2)),
+             label = sprintf("r == %.2f", round(cor_vals[2], 2)),
              parse = TRUE, hjust = 0, vjust = 1, color = "black", size = 5.5) +
     # annotate p-value
     annotate("text", x = as.Date("2005-01-01"), y = 2.4,
