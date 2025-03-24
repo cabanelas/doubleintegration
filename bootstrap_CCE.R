@@ -146,7 +146,7 @@ stopCluster(cl)
 end_time <- Sys.time()
 end_time - start_time
 cat("Total computation time: ", end_time - start_time, "\n")
-#Total computation time: 2.94 mins
+#Total computation time: 2.94 mins; 2.66
 
 final_results <- data.frame(
   # original correlations 
@@ -212,10 +212,10 @@ obs_df <- data.frame(
 )
 
 # export and save plot
-ggsave("figures/CCE/bootstrapPDF_CCE_Ns_spring.png", 
-       PDF_plot, 
-       width = 10, height = 6, dpi = 300, 
-       bg = "white")
+#ggsave("figures/CCE/bootstrapPDF_CCE_Ns_spring.png", 
+#       PDF_plot, 
+#       width = 10, height = 6, dpi = 300, 
+#       bg = "white")
 
 
 
@@ -285,14 +285,14 @@ pval2 <- final_results$pval_pair_integrated[1]
               linewidth = 1.2) +
     # annotate correlation coefficient
     annotate("text", x = as.Date("1960-01-01"), y = 3,
-             label = sprintf("rho == %.4f", cor1),
+             label = sprintf("r == %.2f", cor1),
              parse = TRUE, hjust = 0, vjust = 1, color = "black", size = 5.5) +
     # annotate bootstrapped p-value
     annotate("text", x = as.Date("1960-01-01"), y = 2.4,
              label = if (pval1 < 0.001) {
-               as.expression(bquote(italic(P) < 0.001))
+               as.expression(bquote(italic(p) < 0.001))
              } else {
-               as.expression(bquote(italic(P) == .(round(pval1, 3))))
+               as.expression(bquote(italic(p) == .(round(pval1, 3))))
              },
              parse = TRUE, hjust = 0, vjust = 1, size = 5.5) +
     theme_bw() +
@@ -326,14 +326,14 @@ pval2 <- final_results$pval_pair_integrated[1]
               linewidth = 1.2) +
     # annotate correlation coefficient
     annotate("text", x = as.Date("1960-01-01"), y = 3,
-             label = sprintf("rho == %.4f", cor2),
+             label = sprintf("r == %.2f", cor2),
              parse = TRUE, hjust = 0, vjust = 1, color = "black", size = 5.5) +
     # annotate bootstrapped p-value
     annotate("text", x = as.Date("1960-01-01"), y = 2.4,
              label = if (pval2 < 0.001) {
-               as.expression(bquote(italic(P) < 0.001))
+               as.expression(bquote(italic(p) < 0.001))
              } else {
-               as.expression(bquote(italic(P) == .(round(pval2, 3))))
+               as.expression(bquote(italic(p) == .(round(pval2, 3))))
              },
              parse = TRUE, hjust = 0, vjust = 1, size = 5.5) +
     theme_bw() +
@@ -379,7 +379,7 @@ title <- ggdraw() +
                          rel_heights = c(0.07, 0.8, 0.07))) 
 
 # export and save plot
-ggsave("figures/CCE/bootstrap_CCE_Ns_spring.png", 
-       final_plot, 
-       width = 8, height = 8, dpi = 300, 
-       bg = "white")
+#ggsave("figures/CCE/bootstrap_CCE_Ns_spring.png", 
+#       final_plot, 
+#       width = 8, height = 8, dpi = 300, 
+#       bg = "white")
