@@ -4,6 +4,11 @@
 #############          Double Integration          #############################
 ## by: Alexandra Cabanelas 
 ################################################################################
+# spectral plots
+# showing how driver vs integrated driver == red vs redder ts 
+# red == -2 slope
+# redder == -4 slope
+# white is just flat
 
 ## ------------------------------------------ ##
 #            Packages -----
@@ -113,23 +118,62 @@ legend("bottomleft", legend = paste0("Slope: ",
 specMeiInt_plot <- recordPlot()
 
 
-
-
 specPDO_plot
 specInt_plot
 specMEI_plot
 specMeiInt_plot
 
+## to save plots....
 plots <- list(
   specPDO_plot = specPDO_plot,
   specInt_plot = specInt_plot,
   specMEI_plot = specMEI_plot,
   specMeiInt_plot = specMeiInt_plot
 )
-
+#saving plots
 for (name in names(plots)) {
   png(filename = file.path("figures", paste0(name, ".png")),
       width = 6, height = 4.5, units = "in", res = 300)
   replayPlot(plots[[name]])
   dev.off()
 }
+
+
+
+
+
+### plotting white noise for ASLO ASM pres
+
+set.seed(123)
+wn <- rnorm(700)
+
+png("figures/white_noise_ts.png", width = 6, height = 4, units = "in", res = 300)
+plot.ts(wn, main = "White Noise Time Series", 
+        ylab = "Value", 
+        xlab = "Time")
+dev.off()
+
+set.seed(123)
+n <- 700
+phi <- 0.9  # high autocorrelation → red noise
+
+white_noise <- rnorm(n)
+red_noise <- stats::filter(white_noise, filter = phi, method = "recursive")
+
+png("figures/red_noise_ts.png", width = 6, height = 4, units = "in", res = 300)
+plot.ts(red_noise, 
+        main = "Red Noise Time Series (AR(1))", 
+        ylab = "Value", 
+        xlab = "Time")
+dev.off()
+
+
+red2 <- stats::filter(red_noise, filter = phi, method = "recursive")
+
+png("figures/very_red_noise_ts.png", width = 6, height = 4, units = "in", res = 300)
+plot.ts(red2,
+        main = "Very Red Noise Time Series (Slope ≈ -4)",
+        ylab = "Value",
+        xlab = "Time")
+dev.off()
+
