@@ -211,10 +211,10 @@ obs_df <- data.frame(
 )
 
 # export and save plot
-ggsave("figures/PAL/bootstrapPDF_PAL_Lr_summer.png", 
-       PDF_plot, 
-       width = 10, height = 6, dpi = 300, 
-       bg = "white")
+#ggsave("figures/PAL/bootstrapPDF_PAL_Lr_summer.png", 
+#       PDF_plot, 
+#       width = 10, height = 6, dpi = 300, 
+#       bg = "white")
 
 
 ## ------------------------------------------ ##
@@ -261,14 +261,14 @@ pval2 <- final_results$pval_pair_integrated[1]
               linewidth = 1.2) +
     # annotate correlation coefficient
     annotate("text", x = as.Date("1992-01-01"), y = 3,
-             label = sprintf("rho == %.4f", cor1),
+             label = sprintf("r == %.2f", cor1),
              parse = TRUE, hjust = 0, vjust = 1, color = "black", size = 5.5) +
     # annotate bootstrapped p-value
     annotate("text", x = as.Date("1992-01-01"), y = 2.4,
              label = if (pval1 < 0.001) {
-               as.expression(bquote(italic(P) < 0.001))
+               as.expression(bquote(italic(p) < 0.001))
              } else {
-               as.expression(bquote(italic(P) == .(round(pval1, 3))))
+               as.expression(bquote(italic(p) == .(round(pval1, 3))))
              },
              parse = TRUE, hjust = 0, vjust = 1, size = 5.5) +
     theme_bw() +
@@ -283,10 +283,10 @@ pval2 <- final_results$pval_pair_integrated[1]
           legend.position = "bottom",
           plot.title = element_blank()) +
     # x-axis settings
-    scale_x_date(breaks = seq(as.Date("1990-01-01"), as.Date("2025-01-01"), 
+    scale_x_date(breaks = seq(as.Date("1990-01-01"), as.Date("2026-01-01"), 
                               by = "5 years"),
                  date_labels = "%Y", expand = c(0, 0)) +
-    coord_cartesian(xlim = as.Date(c("1990-01-01", "2025-01-01"))) +
+    coord_cartesian(xlim = as.Date(c("1990-01-01", "2026-01-01"))) +
     # manual color legend
     scale_color_manual(values = c("MEI" = "red", "Abundance" = "blue")) +
     labs(y = "MEI")
@@ -301,14 +301,14 @@ pval2 <- final_results$pval_pair_integrated[1]
               linewidth = 1.2) +
     # annotate correlation coefficient
     annotate("text", x = as.Date("1992-01-01"), y = 3,
-             label = sprintf("rho == %.4f", cor2),
+             label = sprintf("r == %.2f", cor2),
              parse = TRUE, hjust = 0, vjust = 1, color = "black", size = 5.5) +
     # annotate bootstrapped p-value
     annotate("text", x = as.Date("1992-01-01"), y = 2.4,
              label = if (pval2 < 0.001) {
-               as.expression(bquote(italic(P) < 0.001))
+               as.expression(bquote(italic(p) < 0.001))
              } else {
-               as.expression(bquote(italic(P) == .(round(pval2, 3))))
+               as.expression(bquote(italic(p) == .(round(pval2, 3))))
              },
              parse = TRUE, hjust = 0, vjust = 1, size = 5.5) +
     theme_bw() +
@@ -320,10 +320,10 @@ pval2 <- final_results$pval_pair_integrated[1]
           legend.key.size = unit(2, "lines"),
           plot.title = element_blank()) +
     # x-axis settings
-    scale_x_date(breaks = seq(as.Date("1990-01-01"), as.Date("2025-01-01"), 
+    scale_x_date(breaks = seq(as.Date("1990-01-01"), as.Date("2026-01-01"), 
                               by = "5 years"),
                  date_labels = "%Y", expand = c(0, 0)) +
-    coord_cartesian(xlim = as.Date(c("1990-01-01", "2025-01-01"))) +
+    coord_cartesian(xlim = as.Date(c("1990-01-01", "2026-01-01"))) +
     # manual color legend
     scale_color_manual(values = c("MEI" = "red", "Abundance" = "blue")) +
     # y-axis label
@@ -354,7 +354,7 @@ title <- ggdraw() +
                          rel_heights = c(0.07, 0.8, 0.07))) 
 
 
-ggsave("figures/PAL/bootstrap_PAL_Lr_summer.png", 
-       final_plot, 
-       width = 8, height = 8, dpi = 300, 
-       bg = "white")
+#ggsave("figures/PAL/bootstrap_PAL_Lr_summer.png", 
+#       final_plot, 
+#       width = 8, height = 8, dpi = 300, 
+#       bg = "white")
