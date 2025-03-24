@@ -208,9 +208,9 @@ for (group_name in names(correlation_list)) {
     # annotate p-value
     annotate("text", x = as.Date("2005-01-01"), y = 2.4,
              label = if (p_vals[1] < 0.001) {
-               as.expression(bquote(italic(P) < 0.001))
+               as.expression(bquote(italic(p) < 0.001))
              } else {
-               as.expression(bquote(italic(P) == .(round(p_vals[1], 3))))
+               as.expression(bquote(italic(p) == .(round(p_vals[1], 3))))
              },
              parse = TRUE, hjust = 0, vjust = 1, color = "black", size = 5.5) +
     theme_bw() +
@@ -249,9 +249,9 @@ for (group_name in names(correlation_list)) {
     # annotate p-value
     annotate("text", x = as.Date("2005-01-01"), y = 2.4,
              label = if (p_vals[2] < 0.001) {
-               as.expression(bquote(italic(P) < 0.001))
+               as.expression(bquote(italic(p) < 0.001))
              } else {
-               as.expression(bquote(italic(P) == .(round(p_vals[2], 3))))
+               as.expression(bquote(italic(p) == .(round(p_vals[2], 3))))
              },
              parse = TRUE, hjust = 0, vjust = 1, color = "black", size = 5.5) +
     theme_bw() +

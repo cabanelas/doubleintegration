@@ -171,9 +171,9 @@ wcor_NGA
   # annotate p-value
   annotate("text", x = as.Date("2000-01-01"), y = 2.4,
            label = if (pval1 < 0.001) {
-             as.expression(bquote(italic(P) < 0.001))
+             as.expression(bquote(italic(p) < 0.001))
            } else {
-             as.expression(bquote(italic(P) == .(round(pval1, 3))))
+             as.expression(bquote(italic(p) == .(round(pval1, 3))))
            },
            parse = TRUE, hjust = 0, vjust = 1, color = "black", size = 5.5) +
   theme_bw() +
@@ -210,9 +210,9 @@ wcor_NGA
   # annotate p-value
   annotate("text", x = as.Date("2000-01-01"), y = 2.4,
            label = if (pval2 < 0.001) {
-             as.expression(bquote(italic(P) < 0.001))
+             as.expression(bquote(italic(p) < 0.001))
            } else {
-             as.expression(bquote(italic(P) == .(round(pval2, 3))))
+             as.expression(bquote(italic(p) == .(round(pval2, 3))))
            },
            parse = TRUE, hjust = 0, vjust = 1, color = "black", size = 5.5) +
   theme_bw() +
@@ -278,9 +278,9 @@ Int2Plot <- ggplot() +
   # annotate p-value
   annotate("text", x = as.Date("2000-01-01"), y = 2.4,
            label = if (pval3 < 0.001) {
-             as.expression(bquote(italic(P) < 0.001))
+             as.expression(bquote(italic(p) < 0.001))
            } else {
-             as.expression(bquote(italic(P) == .(round(pval3, 3))))
+             as.expression(bquote(italic(p) == .(round(pval3, 3))))
            },
            parse = TRUE, hjust = 0, vjust = 1, color = "black", size = 5.5) +
   theme_bw() +
