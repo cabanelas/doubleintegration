@@ -1,0 +1,2 @@
+"","original_cor_norm","original_cor_int","original_pval_norm","original_pval_int","cor_coeffs_pair_mean","cor_coeffs_pair_integrated_mean","ci_pair_lower","ci_pair_upper","ci_pair_integrated_lower","ci_pair_integrated_upper","pval_pair","pval_pair_integrated","significant_original","significant_integrated"
+"2.5%",-0.717482081950927,-0.736638562985482,5.55792575356566e-06,2.30355080038362e-06,-0.000767719296907703,0.000183475266837869,-0.401361393092543,0.403508146359746,-0.42068847496059,0.418784906065769,0,1e-04,TRUE,TRUE
