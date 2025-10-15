@@ -62,7 +62,7 @@ AR_biology <- read.csv(file.path("output",
 original_correlations <- read.csv(file.path("output",
                                             "NGA",
                                             "weightedCor_NGA.csv"), 
-                                  header = T)
+                                  header = T) #CHECK VERSION OF THIS FILE TO USE
 
 ## ------------------------------------------ ##
 #     Function for weighted integrations -----
@@ -175,7 +175,7 @@ final_results <- final_results %>%
       original_cor_int > ci_pair_integrated_upper
   )
 final_results
-#write.csv(final_results, "output/NGA/boot_results_NGA.csv")
+#write.csv(final_results, "output/NGA/boot_results_NGA.csv") #in the other script this ended up as v2
 
 
 ## ------------------------------------------ ##
@@ -236,7 +236,7 @@ PDO <- read.csv(file.path("output",
 
 neocal <- read.csv(file.path("raw",
                              "NGA",
-                             "NeocalanusCristBiomass_Spr.csv")) %>%
+                             "NeocalanusCristBiomass_Spr.csv")) %>% #check version !!!!***
   mutate(Year = as.numeric(gsub("S", "", Year)),#remove S from year col
          taxa = "NeocalanusCrist",
          date = as.Date(paste0(Year, "-03-01"))) #give abundance daymonth to match w index
@@ -249,7 +249,7 @@ neocal$Anomaly_yr <- (neocal$LogMean - neocal$Yc_mean)/neocal$Yc_sd
 
 cor_NGA <- read.csv(file.path("output",
                               "NGA",
-                              "weightedCor_NGA.csv"))
+                              "weightedCor_NGA.csv")) #check which version to use here
 
 cor1 <- cor_NGA$cor_Norm[1]
 cor2 <- cor_NGA$cor_Int[1]
@@ -259,10 +259,11 @@ pval2 <- final_results$pval_pair_integrated[1]
 
 (NormPlot <- ggplot() +
     # Driver time series (PDO normalized)
-    geom_line(data = PDO, aes(x = time, y = pdoNorm, color = "PDO"), 
+    geom_line(data = PDO, aes(x = time, y = pdoNorm, 
+                              color = "Pacific Decadal Oscillation"), 
               linewidth = 1.2) +
-    # Neocalanus cristatus time series (Abundance)
-    geom_line(data = neocal, aes(x = date, y = Anomaly_yr, color = "Abundance"), 
+    # Neocalanus cristatus time series (Biomass)
+    geom_line(data = neocal, aes(x = date, y = Anomaly_yr, color = "Biomass"), 
               linewidth = 1.2) +
     # annotate correlation coefficient
     annotate("text", x = as.Date("2000-01-01"), y = 3,
@@ -286,22 +287,25 @@ pval2 <- final_results$pval_pair_integrated[1]
           legend.text = element_text(size = 15, face = "bold"),
           legend.key.size = unit(2, "lines"),
           legend.position = "bottom",
-          plot.title = element_blank()) +
+          plot.title = element_blank(),
+          panel.grid = element_blank()) +
     # x-axis settings
     scale_x_date(breaks = seq(as.Date("1995-01-01"), as.Date("2022-01-01"), by = "5 years"),
                  date_labels = "%Y", expand = c(0, 0)) +
     coord_cartesian(xlim = as.Date(c("1995-01-01", "2022-01-01"))) +
     # manual color legend
-    scale_color_manual(values = c("PDO" = "red", "Abundance" = "blue")) +
+    scale_color_manual(values = c("Pacific Decadal Oscillation" = "red", 
+                                  "Biomass" = "blue")) + #confirm whether i have biomass or abundance
     labs(y = "PDO")
 )
 
 (Int1Plot <- ggplot() +
     # Driver time series (Integrated PDO)
-    geom_line(data = PDO, aes(x = time, y = pdoInt, color = "PDO"), 
+    geom_line(data = PDO, aes(x = time, y = pdoInt, 
+                              color = "Pacific Decadal Oscillation"), 
               linewidth = 1.2) +
-    # Neocalanus cristatus time series (Abundance)
-    geom_line(data = neocal, aes(x = date, y = Anomaly_yr, color = "Abundance"), 
+    # Neocalanus cristatus time series (Biomass)
+    geom_line(data = neocal, aes(x = date, y = Anomaly_yr, color = "Biomass"), 
               linewidth = 1.2) +
     # annotate correlation coefficient
     annotate("text", x = as.Date("2000-01-01"), y = 3,
@@ -328,7 +332,8 @@ pval2 <- final_results$pval_pair_integrated[1]
                  date_labels = "%Y", expand = c(0, 0)) +
     coord_cartesian(xlim = as.Date(c("1995-01-01", "2022-01-01"))) +
     # manual color legend
-    scale_color_manual(values = c("PDO" = "red", "Abundance" = "blue")) +
+    scale_color_manual(values = c("Pacific Decadal Oscillation" = "red", 
+                                  "Biomass" = "blue")) +
     # y-axis label
     labs(y = "Integrated PDO")
 )
