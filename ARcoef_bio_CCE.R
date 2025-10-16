@@ -1,7 +1,7 @@
 ################################################################################
 #############          Pelagic Synthesis           #############################
 #############             MAR-2025                 #############################
-#############        CCE -  Double Integration     #############################
+#############        CCE - Double Integration      #############################
 ## by: Alexandra Cabanelas
 ################################################################################
 ## CCE LTER
@@ -27,7 +27,7 @@ library(astsa) #v2.1; acf2 (optional)
 #library(urca) #v1.3.3
 
 ## ------------------------------------------ ##
-#            Data -----
+#            Data & Tidy -----
 ## ------------------------------------------ ##
 bio <- read.csv(file.path("raw",
                           "CCE",
@@ -35,27 +35,25 @@ bio <- read.csv(file.path("raw",
   rename(year = Year) %>%
   mutate(
     taxa = "Nsimplex",
-    year = as.numeric(year),
-    # calc anomalies
+    year = as.numeric(year)
+  ) %>%
+  # --- add the missing years -----
+  #no sampling = 1967, 1968, 1971, 1973 and 2020
+  #real 0s = 1972, 1976, 2010-2012
+  complete(year = seq(min(year), max(year), by = 1)) %>%
+  as.data.frame() %>%
+  arrange(year) %>%
+  mutate(
+    #linear interpolation - these analyses dont like NAs
+    Abundance = approx(year, Abundance, xout = year)$y,
+    # calculate anomalies
     # Abundance = Log10(Abundance per m2 + 1)
     Yc_mean = mean(Abundance, na.rm = TRUE),
     Yc_sd = sqrt(sum((Abundance - Yc_mean)^2, na.rm = TRUE) / sum(!is.na(Abundance))), #pop mean; not sample..
     #z-score
     anomaly_yr = (Abundance - Yc_mean) / Yc_sd
+    #could also use scale(Abundance)[,1] if using sample SD
   )
-
-## ------------------------------------------ ##
-#            Tidy -----
-## ------------------------------------------ ##
-
-# --- add the missing years -----
-#no sampling = 1967, 1968, 1971, 1973 and 2020
-#real 0s = 1972, 1976, 2010-2012
-bio <- bio %>%
-  complete(year = seq(min(year), max(year), by = 1)) %>%
-  as.data.frame() %>%
-  #linear interpolation - these analyses dont like NAs
-  mutate(anomaly_yr = approx(year, anomaly_yr, xout = year)$y)
 
 # --- create time series object -----
 bioTS <- ts(bio$anomaly_yr, 
