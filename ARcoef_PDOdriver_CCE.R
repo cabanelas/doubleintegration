@@ -1,14 +1,14 @@
 ################################################################################
 #############          Pelagic Synthesis           #############################
 #############             FEB-2025                 #############################
-#############       CCE Double Integration         #############################
+#############       CCE - Double Integration       #############################
 ## by: Alexandra Cabanelas 
 ################################################################################
-##### CCE LTER
-##### Driver = Pacific Decadal Oscillation PDO
-##### 1941
-## Double Integration Analysis CCE
-# Script #1 : ARcoef_driver_CCE
+## CCE LTER
+## Driver = Pacific Decadal Oscillation PDO
+## 1941
+
+# Script #1 : ARcoef_PDOdriver_CCE
 
 # script to calculate AR coefficient of driver 
 
@@ -28,7 +28,7 @@ library(tidyverse)
 #library(urca) #v1.3.3
 
 ## ------------------------------------------ ##
-#            DATA & TIDY -----
+#            Data & Tidy -----
 ## ------------------------------------------ ##
 PDO <- read.csv(file.path("raw", 
                           "CCE",
@@ -49,7 +49,7 @@ PDO <- read.csv(file.path("raw",
        #filtering 10 yrs before bio data
        filter(Year >= 1941, Year <= 2021, pdo < 99) 
 
-# --- create time series object
+# --- create time series object -----
 PDOts <- ts(PDO$pdo, start = c(1941, 1), frequency = 12)
 
 head(PDO)
@@ -141,4 +141,4 @@ ar_info_df <- data.frame(ts_name = "PDO",
 
 print(ar_info_df)
 
-#write.csv(ar_info_df, "output/CCE/AR_coef_PDOdriver_CCE.csv")
+#write.csv(ar_info_df, "output/CCE/ARcoef_PDOdriver_CCE.csv")
