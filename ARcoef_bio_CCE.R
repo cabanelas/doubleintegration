@@ -5,7 +5,7 @@
 ## by: Alexandra Cabanelas
 ################################################################################
 ## CCE LTER
-## Organism = Nyctiphanes simplex
+## Organism = Nyctiphanes simplex m2
 ## 1951-2021
 
 # Script #2 : ARcoef_bio_CCE
@@ -44,15 +44,19 @@ bio <- read.csv(file.path("raw",
   as.data.frame() %>%
   arrange(year) %>%
   mutate(
-    #linear interpolation - these analyses dont like NAs
+    # --- linear interpolation - these analyses dont like NAs -----
     Abundance = approx(year, Abundance, xout = year)$y,
-    # calculate anomalies
+    
+    # --- calculate anomalies -----
     # Abundance = Log10(Abundance per m2 + 1)
     Yc_mean = mean(Abundance, na.rm = TRUE),
-    Yc_sd = sqrt(sum((Abundance - Yc_mean)^2, na.rm = TRUE) / sum(!is.na(Abundance))), #pop mean; not sample..
-    #z-score
+    # the matlab code uses sample (denominator = n-1) sd
+    Yc_sd = sd(Abundance, na.rm = TRUE), 
+    #for pop sd = sqrt(sum((Abundance - Yc_mean)^2, na.rm = TRUE) / sum(!is.na(Abundance))),
+    
+    # --- z-score -----
     anomaly_yr = (Abundance - Yc_mean) / Yc_sd
-    #could also use scale(Abundance)[,1] if using sample SD
+    # or scale(Abundance)[,1] #sample SD
   )
 
 # --- create time series object -----
