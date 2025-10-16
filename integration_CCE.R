@@ -174,10 +174,10 @@ cor_CCE
 ## ------------------------------------------ ##
 
 # save N. simplex Z-score data 
-#write.csv(euphs[, c("date", "Anomaly_yr", "taxa")], "output/CCE/nsimplex_zscore.csv", row.names = FALSE)
+#write.csv(euphs[, c("date", "Anomaly_yr", "taxa")], "output/CCE/nsimplex_anomalies.csv", row.names = FALSE)
 
 # save PDO monthly z-scored
-#write.csv(PDO, "output/CCE/PDO_int.csv", row.names = FALSE)
+#write.csv(PDO, "output/CCE/PDOint_Nsimplex_CCE.csv", row.names = FALSE)
 
 # save integration results 
 #write.csv(cor_CCE, "output/CCE/cor_Nsimplex_CCE.csv")
@@ -286,7 +286,7 @@ title <- ggdraw() +
                          rel_heights = c(0.07, 0.8, 0.07))) 
 
 # export and save plot
-ggsave("figures/CCE/conventional_CCE_Ns_spring.png", 
-       final_plot, 
-       width = 8, height = 8, dpi = 300, 
-       bg = "white")
+#ggsave("figures/CCE/conventional_CCE_Ns_spring.png", 
+#       final_plot, 
+#       width = 8, height = 8, dpi = 300, 
+#       bg = "white")
