@@ -132,6 +132,7 @@ par(mfrow = c(1, 1))
 ## ------------------------------------------ ##
 se <- sqrt(diag(vcov(AR1_model)))[1]  # standard error. or  sqrt(vcov(AR1_model)["ar1","ar1"])
 sigma2 <- AR1_model$sigma2
+n = nrow(PDO)
 # sd <- sqrt(sigma2)
 # ci <- ar1_coefficient + c(-1.96, 1.96) * se
 ar_info_df <- data.frame(ts_name = "PDO",
