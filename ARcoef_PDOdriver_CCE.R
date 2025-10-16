@@ -137,7 +137,8 @@ sigma2 <- AR1_model$sigma2
 ar_info_df <- data.frame(ts_name = "PDO",
                          AR_coef = ar1_coefficient,
                          se = se,
-                         sigma2 = sigma2)
+                         sigma2 = sigma2,
+                         n = n) #time series length
 
 print(ar_info_df)
 
