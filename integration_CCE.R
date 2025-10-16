@@ -174,10 +174,10 @@ cor_CCE
 ## ------------------------------------------ ##
 
 # save N. simplex Z-score data 
-write.csv(euphs[, c("date", "Anomaly_yr", "taxa")], "output/CCE/nsimplex_zscore.csv", row.names = FALSE)
+#write.csv(euphs[, c("date", "Anomaly_yr", "taxa")], "output/CCE/nsimplex_zscore.csv", row.names = FALSE)
 
 # save PDO monthly z-scored
-write.csv(PDO[, c("time", "pdo_z")], "output/CCE/pdo_z_output.csv", row.names = FALSE)
+#write.csv(PDO, "output/CCE/PDO_int.csv", row.names = FALSE)
 
 # save integration results 
 #write.csv(cor_CCE, "output/CCE/cor_Nsimplex_CCE.csv")
