@@ -5,7 +5,7 @@
 ## by: Alexandra Cabanelas
 ################################################################################
 ## CCE LTER
-## Organism = Nyctiphanes simplex m2
+## Organism = Nyctiphanes simplex (abundance m2)
 ## 1951-2021
 
 # Script #2 : ARcoef_bio_CCE
