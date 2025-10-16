@@ -135,12 +135,14 @@ par(mfrow = c(1, 1))
 ## ------------------------------------------ ##
 se <- sqrt(diag(vcov(AR1_model)))[1]  # standard error
 sigma2 <- AR1_model$sigma2
+n <- nrow(bio)
 
 ar_info_df <- data.frame(site = "CCE",
                          spp = "N_simplex",
                          AR_coef = ar1_coefficient,
                          se = se,
-                         sigma2 = sigma2)
+                         sigma2 = sigma2,
+                         n = n)
 
 print(ar_info_df)
 #write.csv(ar_info_df, "output/CCE/ARcoef_Nsimplexbio_CCE.csv")
