@@ -254,7 +254,7 @@ significance_envelope$tau_years <- significance_envelope$tau / 12
 
 # --- 2. Integration Sensitivity ---
 #initialize results df
-tau_sensitivity <- data.frame(tau = tau_range, cor = NA) 
+tau_sensitivity <- data.frame(tau = tau_range, cor_int = NA_real_) 
 
 # Loop over tau values
 for (i in seq_along(tau_range)) {
@@ -266,25 +266,26 @@ for (i in seq_along(tau_range)) {
   pdo_int_z_i <- as.numeric(scale(pdo_int_i)) 
   
   # Interpolate to biological sampling dates
-  PDO_raw_interp <- approx(PDO$time, PDO$pdo_z, xout = euphs$date, rule = 1)$y
+  #PDO_raw_interp <- approx(PDO$time, PDO$pdo_z, xout = euphs$date, rule = 1)$y
   PDO_int_interp <- approx(PDO$time, pdo_int_z_i, xout = euphs$date, rule = 1)$y
   
   # Compute correlation with biological anomalies
-  cor_raw <- cor(PDO_raw_interp, euphs$Anomaly_yr, use = "complete.obs")
-  cor_i <- cor(PDO_int_interp, euphs$Anomaly_yr, use = "complete.obs")
+  #cor_raw <- cor(PDO_raw_interp, euphs$Anomaly_yr, use = "complete.obs")
+  cor_int <- cor(PDO_int_interp, euphs$Anomaly_yr, use = "complete.obs")
   
   # Store result
-  tau_sensitivity$cor[i] <- cor_i
+  #tau_sensitivity$cor_raw[i] <- cor_raw
+  tau_sensitivity$cor_int[i] <- cor_int
 }
 # convert tau to years
 tau_sensitivity$tau_years <- tau_sensitivity$tau / 12
 
-plot(tau_range / 12, tau_sensitivity$cor, type = "l", lwd = 2, col = "black", 
+plot(tau_range / 12, tau_sensitivity$cor_int, type = "l", lwd = 2, col = "black", 
      xlab = "Timescale τ (years)", 
      ylab = "Correlation",
      main = "Sensitivity to τ (biological memory)")
 
-# --- 3. Low-pass Filter Sensitivity ---
+# --- 3. Low-pass Filter Sensitivity --- CHECKKK THIS PART
 lowpass_sensitivity <- data.frame(tau = tau_range, cor = NA)
 
 for (i in seq_along(tau_range)) {
@@ -308,9 +309,12 @@ lowpass_sensitivity$tau_years <- tau_range / 12
 #cor_threshold_95 <- quantile(cor_results$cor_Int, probs = 0.95)
 # Merge significance envelope with tau_sensitivity
 tau_sensitivity <- tau_sensitivity %>%
-  left_join(significance_envelope %>% select(tau_years, cor_95), by = "tau_years") %>%
-  mutate(significant = cor > cor_95)
+  left_join(significance_envelope %>% 
+              select(tau_years, cor_95), 
+            by = "tau_years") %>%
+  mutate(significant = cor_int > cor_95)
 
+# could skip if not ing lowpass
 combined_df <- rbind(
   data.frame(tau = tau_sensitivity$tau_years, 
              cor = tau_sensitivity$cor, 
@@ -366,6 +370,8 @@ ggplot(combined_df, aes(x = tau, y = cor, color = Type)) +
     breaks = seq(0, 10, by = 2),
     limits = c(0, 10)
   ) 
+
+
 
 ## ------------------------------------------ ##
 #     Plot PDFs -----
