@@ -68,6 +68,18 @@ original_correlations <- read.csv(file.path("output",
                                             "CCE",
                                             "cor_Nsimplex_CCE.csv"), 
                                   header = T) #created in script#3
+# for plots..
+PDO <- read.csv(file.path("output",
+                          "CCE",
+                          "PDOint_Nsimplex_CCE.csv"), 
+                header = T) %>%
+  mutate(time = as.Date(time, 
+                        format = "%Y-%m-%d")) #created in script#3
+
+euphs <- read.csv(file.path("output",
+                            "CCE",
+                            "nsimplex_anomalies.csv")) %>% #created in script#3
+  mutate(date = as.Date(date))
 
 ## ------------------------------------------ ##
 #     Function for integrations -----
@@ -186,6 +198,113 @@ final_results
 #write.csv(final_results, "output/CCE/boot_results_NsimplexCCE.csv")
 
 ## ------------------------------------------ ##
+# Sensitivity Analysis: Vary τ and compute correlation
+## ------------------------------------------ ##
+
+# range of tau values (in months)
+tau_range <- seq(6, 120, by = 3)  # 0.5-10 years in 3month steps
+
+#initialize results df
+tau_sensitivity <- data.frame(tau = tau_range, cor = NA) 
+#cor_vals <- numeric(length(tau_range))
+
+# Loop over tau values
+for (i in seq_along(tau_range)) {
+  
+  tau_i <- tau_range[i]
+  
+  # integrate PDO
+  pdo_int_i <- recursive_integration(PDO$pdo_z, tau = tau_i, dt = 1)
+  # z-score
+  pdo_int_z_i <- as.numeric(scale(pdo_int_i)) 
+  
+  # Interpolate to biological sampling dates
+  PDO_raw_interp <- approx(PDO$time, PDO$pdo_z, xout = euphs$date, rule = 1)$y
+  PDO_int_interp <- approx(PDO$time, pdo_int_z_i, xout = euphs$date, rule = 1)$y
+  
+  # Compute correlation with biological anomalies
+  cor_raw <- cor(PDO_raw_interp, euphs$Anomaly_yr, use = "complete.obs")
+  cor_i <- cor(PDO_int_interp, euphs$Anomaly_yr, use = "complete.obs")
+  
+  # Store result
+  tau_sensitivity$cor[i] <- cor_i
+}
+
+plot(tau_range / 12, tau_sensitivity$cor, type = "l", lwd = 2, col = "black", 
+     xlab = "Timescale τ (years)", 
+     ylab = "Correlation",
+     main = "Sensitivity to τ (biological memory)")
+
+library(signal)
+lowpass_sensitivity <- data.frame(tau = tau_range, cor = NA)
+
+for (i in seq_along(tau_range)) {
+  tau_i <- tau_range[i]
+  cutoff_freq <- 1 / tau_i  # cycles per month
+  
+  # Butterworth low-pass filter
+  bf <- butter(n = 2, W = cutoff_freq, type = "low", plane = "z")
+  pdo_filtered <- filtfilt(bf, PDO$pdo_z)
+  pdo_filtered_z <- as.numeric(scale(pdo_filtered))
+  
+  PDO_interp <- approx(PDO$time, pdo_filtered_z, xout = euphs$date, rule = 2)$y
+  cor_i <- cor(PDO_interp, euphs$Anomaly_yr, use = "complete.obs")
+  lowpass_sensitivity$cor[i] <- cor_i
+}
+
+# convert tau to years
+lowpass_sensitivity$tau_years <- tau_range / 12
+tau_sensitivity$tau_years <- tau_sensitivity$tau / 12
+
+#  results
+print(tau_sensitivity)
+cor_threshold_95 <- quantile(cor_results$cor_Int, probs = 0.95)
+
+combined_df <- rbind(
+  data.frame(tau = tau_sensitivity$tau_years, cor = tau_sensitivity$cor, Type = "Integrated PDO"),
+  data.frame(tau = lowpass_sensitivity$tau_years, cor = lowpass_sensitivity$cor, Type = "Low-pass PDO")
+)
+
+ggplot(tau_sensitivity, aes(x = tau_years, y = cor)) +
+  geom_hline(yintercept = cor_threshold_95, linetype = "dashed", 
+             color = "gray40") +
+  annotate("rect", xmin = 0.5, xmax = 2, ymin = -Inf, ymax = Inf, 
+           alpha = 0.5, fill = "gray") +
+  geom_line(color = "black", linewidth = 1.2) +
+  geom_point(color = "blue", size = 2) +
+  geom_hline(yintercept = cor_raw, color = "red", linewidth = 1.2) +
+  labs(title = expression(italic(N.*simplex)~"sensitivity to biological damping timescale"),
+       subtitle = paste("Black = integrated PDO; Red = raw PDO\nDashed line = 95% significance (r =", round(cor_threshold_95, 2), ")"),
+       x = expression(paste("Biological memory ", tau[bio], " [years]")),
+       y = "Correlation coefficient (r)",
+       caption = "CCE – spring") +
+  theme_minimal(base_size = 14)
+
+peak <- tau_sensitivity[which.max(tau_sensitivity$cor), ]
+ggplot(combined_df, aes(x = tau, y = cor, color = Type)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 2) +
+  geom_hline(yintercept = cor_threshold_95, 
+             linetype = "dashed", color = "gray40") +
+  annotate("rect", xmin = 0.5, xmax = 2, ymin = -Inf, ymax = Inf, 
+           alpha = 0.3, fill = "gray") +
+  geom_point(data = peak, aes(x = tau_years, y = cor), shape = 8, size = 3, color = "black") + 
+  scale_color_manual(values = c("Integrated PDO" = "black", 
+                                "Low-pass PDO" = "red")) +
+  labs(title = expression(italic(N.*simplex)~"sensitivity to biological damping timescale"),
+       subtitle = paste("Dashed line = 95% significance (r =", round(cor_threshold_95, 2), ")"),
+       x = expression(paste("Timescale ", tau, " [years]")),
+       y = "Correlation coefficient (r)",
+       caption = "CCE – spring") +
+  theme_minimal(base_size = 14) +
+  theme(legend.position = "top",
+        legend.title = element_blank()) +
+  scale_x_continuous(
+    breaks = seq(0, 10, by = 2),
+    limits = c(0, 10)
+  ) 
+
+## ------------------------------------------ ##
 #     Plot PDFs -----
 ## ------------------------------------------ ##
 obs_norm <- original_correlations$cor_Norm
@@ -259,21 +378,6 @@ boxplot(cor_results$cor_Norm, cor_results$cor_Int,
 ## ------------------------------------------ ##
 #     Plots -----
 ## ------------------------------------------ ##'
-
-## ---------------- ##
-#     Data -----
-## ---------------- ##
-PDO <- read.csv(file.path("output",
-                          "CCE",
-                          "PDOint_Nsimplex_CCE.csv"), 
-                header = T) %>%
-  mutate(time = as.Date(time, 
-                        format = "%Y-%m-%d")) #created in script#3
-
-euphs <- read.csv(file.path("output",
-                            "CCE",
-                            "nsimplex_anomalies.csv")) %>% #created in script#3
-  mutate(date = as.Date(date))
 
 cor_CCE <- original_correlations
 
@@ -419,3 +523,5 @@ ggplot(summary_df, aes(x = Type)) +
     y = "Correlation coefficient (r)"
   ) +
   theme_minimal(base_size = 14)
+
+
