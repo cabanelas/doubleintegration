@@ -50,6 +50,7 @@ library(doParallel) #better than parallel; v1.0.17
 library(tidyverse)
 library(cowplot) #v1.1.3
 library(doRNG) # so i can parallel while also reproducible
+library(signal)
 
 ## ------------------------------------------ ##
 #            Data -----
@@ -68,7 +69,7 @@ original_correlations <- read.csv(file.path("output",
                                             "CCE",
                                             "cor_Nsimplex_CCE.csv"), 
                                   header = T) #created in script#3
-# for plots..
+# for sensitivity and plots..
 PDO <- read.csv(file.path("output",
                           "CCE",
                           "PDOint_Nsimplex_CCE.csv"), 
@@ -201,16 +202,62 @@ final_results
 # Sensitivity Analysis: Vary τ and compute correlation
 ## ------------------------------------------ ##
 
-# range of tau values (in months)
+#parameters
 tau_range <- seq(6, 120, by = 3)  # 0.5-10 years in 3month steps
+num_sens_iterations <- 1000
+dt <- 1 
 
+# parallel 
+numCores <- parallel::detectCores() - 2
+cl <- makeCluster(numCores)
+registerDoParallel(cl)
+doRNG::registerDoRNG(123)  # reproducible parallel bootstrap
+
+# --- 1. Bootstrapped Significance Envelope ---
+#testing how autocorrelation inflates correlation with increasing tau
+# initialize results
+significance_envelope <- data.frame(tau = tau_range, cor_95 = NA)
+
+# loop over τ values
+for (i in seq_along(tau_range)) {
+  tau_i <- tau_range[i]
+  
+  # Bootstrap 
+  cor_boot <- foreach(k = 1:num_sens_iterations, .combine = c, .packages = "stats") %dorng% {
+    # Generate red-noise time series
+    red_noise_drv <- arima.sim(n = n_driver, model = list(ar = ar_coef_driver))
+    red_noise_bio <- arima.sim(n = n_bio, model = list(ar = ar_coef_bio))
+    
+    # normalize
+    driver_norm <- scale(red_noise_drv)[, 1]
+    
+    # integrate
+    driver_int <- recursive_integration(driver_norm, tau = tau_i, dt = dt)
+    driver_int_z <- scale(driver_int)[, 1]
+    
+    # Interpolate driver to match biology time points
+    idx_yearly <- seq(1, n_driver, length.out = n_bio)
+    #interpolated_driver <- approx(1:n_driver, driver_norm, xout = idx_yearly)$y
+    interpolated_int <- approx(1:n_driver, driver_int_z, xout = idx_yearly)$y
+    
+    cor(interpolated_int, red_noise_bio, use = "complete.obs")
+  }
+  
+  # Extract 95th percentile
+  significance_envelope$cor_95[i] <- quantile(cor_boot, probs = 0.95, 
+                                              na.rm = TRUE)
+}
+# stop parallel cluster
+stopCluster(cl)
+# convert tau to years
+significance_envelope$tau_years <- significance_envelope$tau / 12
+
+# --- 2. Integration Sensitivity ---
 #initialize results df
 tau_sensitivity <- data.frame(tau = tau_range, cor = NA) 
-#cor_vals <- numeric(length(tau_range))
 
 # Loop over tau values
 for (i in seq_along(tau_range)) {
-  
   tau_i <- tau_range[i]
   
   # integrate PDO
@@ -229,13 +276,15 @@ for (i in seq_along(tau_range)) {
   # Store result
   tau_sensitivity$cor[i] <- cor_i
 }
+# convert tau to years
+tau_sensitivity$tau_years <- tau_sensitivity$tau / 12
 
 plot(tau_range / 12, tau_sensitivity$cor, type = "l", lwd = 2, col = "black", 
      xlab = "Timescale τ (years)", 
      ylab = "Correlation",
      main = "Sensitivity to τ (biological memory)")
 
-library(signal)
+# --- 3. Low-pass Filter Sensitivity ---
 lowpass_sensitivity <- data.frame(tau = tau_range, cor = NA)
 
 for (i in seq_along(tau_range)) {
@@ -251,19 +300,33 @@ for (i in seq_along(tau_range)) {
   cor_i <- cor(PDO_interp, euphs$Anomaly_yr, use = "complete.obs")
   lowpass_sensitivity$cor[i] <- cor_i
 }
-
 # convert tau to years
 lowpass_sensitivity$tau_years <- tau_range / 12
-tau_sensitivity$tau_years <- tau_sensitivity$tau / 12
 
 #  results
-print(tau_sensitivity)
-cor_threshold_95 <- quantile(cor_results$cor_Int, probs = 0.95)
+#print(tau_sensitivity)
+#cor_threshold_95 <- quantile(cor_results$cor_Int, probs = 0.95)
+# Merge significance envelope with tau_sensitivity
+tau_sensitivity <- tau_sensitivity %>%
+  left_join(significance_envelope %>% select(tau_years, cor_95), by = "tau_years") %>%
+  mutate(significant = cor > cor_95)
 
 combined_df <- rbind(
-  data.frame(tau = tau_sensitivity$tau_years, cor = tau_sensitivity$cor, Type = "Integrated PDO"),
-  data.frame(tau = lowpass_sensitivity$tau_years, cor = lowpass_sensitivity$cor, Type = "Low-pass PDO")
+  data.frame(tau = tau_sensitivity$tau_years, 
+             cor = tau_sensitivity$cor, 
+             sig_95 = tau_sensitivity$cor_95,
+             significant = tau_sensitivity$significant,
+             Type = "Integrated PDO"),
+  data.frame(tau = lowpass_sensitivity$tau_years, 
+             cor = lowpass_sensitivity$cor,
+             sig_95 = NA,  # not applicable
+             significant = NA,
+             Type = "Low-pass PDO")
 )
+
+## ------------------------------------------ ##
+# Sensitivity plots
+## ------------------------------------------ ##
 
 ggplot(tau_sensitivity, aes(x = tau_years, y = cor)) +
   geom_hline(yintercept = cor_threshold_95, linetype = "dashed", 
