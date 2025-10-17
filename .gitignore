@@ -1,0 +1,13 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+raw/CCE/COPEPOD_CalanusPacificusYear.xlsx
+raw/CCE/Euphausiids_CCE.csv
+raw/CCE/Euphausiids_Pyrosomes_CCE_Ohman_lab_25Oct2023.xlsx
+raw/CCE/EUthecosomesYear.xlsx
+raw/CCE/Salps_Socal_springYear.xlsx
+
+# Ignore discard folders
+output/CCE/discard/
+figures/CCE/discard/
