@@ -1,14 +1,15 @@
 ################################################################################
-#############          Pelagic Synthesis           #############################
-#############             MAR-2025                 #############################
-#############        CCE - Double Integration      #############################
+#############        LTER Pelagic Synthesis WG     #############################
+#############        PAL - Double Integration      #############################
+#############      Biology AR(1) coefficient       #############################
 ## by: Alexandra Cabanelas
+## created MAR-2025, updated OCT-2025
 ################################################################################
-## CCE LTER
-## Organism = Nyctiphanes simplex (abundance m2)
-## 1951-2021
+## Palmer LTER
+## Organism = Limacina rangii 
+## 1993-2023
 
-# Script #2 : ARcoef_bio_CCE
+# Script #2 : 02_ARcoef_Limacinabio_PAL
 
 # script to calculate AR coefficient of the biology time series
 
@@ -24,39 +25,20 @@ library(here) #v1.0.1
 library(forecast) #v8.21; Arima()
 library(tseries) #v0.10.54; ADF test
 library(astsa) #v2.1; acf2 (optional)
-#library(urca) #v1.3.3
 
 ## ------------------------------------------ ##
 #            Data & Tidy -----
 ## ------------------------------------------ ##
 bio <- read.csv(file.path("raw",
-                          "CCE",
-                          "nsimplex_CCE.csv")) %>%
-  rename(year = Year) %>%
+                          "PAL",
+                          "PAL_Limacina.csv")) %>%
+  rename(year = Year,
+         anomaly_yr = Limacina) %>%
   mutate(
-    taxa = "Nsimplex",
-    year = as.numeric(year)
-  ) %>%
-  # --- add the missing years -----
-  #no sampling = 1967, 1968, 1971, 1973 and 2020
-  #real 0s = 1972, 1976, 2010-2012
-  complete(year = seq(min(year), max(year), by = 1)) %>%
-  as.data.frame() %>%
-  arrange(year) %>%
-  mutate(
+    year = as.numeric(format(as.Date(paste0(year, "-03-01")), "%Y")),
     # --- linear interpolation - these analyses dont like NAs -----
-    Abundance = approx(year, Abundance, xout = year)$y,
-    
-    # --- calculate anomalies -----
-    # Abundance = Log10(Abundance per m2 + 1)
-    Yc_mean = mean(Abundance, na.rm = TRUE),
-    # the matlab code uses sample (denominator = n-1) sd
-    Yc_sd = sd(Abundance, na.rm = TRUE), 
-    #for pop sd = sqrt(sum((Abundance - Yc_mean)^2, na.rm = TRUE) / sum(!is.na(Abundance))),
-    
-    # --- z-score -----
-    anomaly_yr = (Abundance - Yc_mean) / Yc_sd
-    # or scale(Abundance)[,1] #sample SD
+    #2021 & 2022 have NAs = no sampling
+    anomaly_yr = approx(year, anomaly_yr, xout = year)$y
   )
 
 # --- create time series object -----
@@ -69,16 +51,11 @@ bioTS <- ts(bio$anomaly_yr,
 ## ------------------------------------------ ##
 # A time series that is non-stationary (has a trend or changing variance) 
 #should be detrended before AR(1) estimation
-plot(bioTS, main = "Nyctiphanes simplex", 
-     ylab = "N. simplex", 
-     xlab = "Year", 
-     type = "l", 
-     col = "black", 
-     lwd = 2)
+plot(bioTS, main = "Limacina", ylab = "Limacina", xlab = "Year", 
+     type = "l", col = "black", lwd = 2)
 
 #boxplot(bioTS~cycle(bioTS))
-ts.plot(bioTS)
-abline(reg=lm(bioTS~time(bioTS)))
+ts.plot(bioTS); abline(reg=lm(bioTS~time(bioTS)))
 
 acf(bioTS)
 # double checked anyways and detrending vs not detrending == almost same AR1 coef
@@ -92,13 +69,12 @@ acf(bioTS)
 # fit AR(1) model
 # this is the MLE approach (got same result as OLS)
 AR1_model <- Arima(bioTS, order = c(1,0,0))
+#sarima(bioTS_ts, 1, 0, 0) #same thing, but gives various diag plost
 
 # print summary
 print(summary(AR1_model))
 ar1_coefficient <- AR1_model$coef["ar1"]  
-ar1_coefficient
-
-#sarima(bioTS, 1, 0, 0) #same thing, but gives various diag plots
+ar1_coefficient #0.1818553 
 
 ## ------------------------------------------ ##
 # diagnostic plots
@@ -111,7 +87,7 @@ bio_residuals <- residuals(AR1_model)
 # plot original time series with fitted values
 par(mfrow = c(2, 2))
 
-ts.plot(bioTS, main = "N. simplex Time Series with AR(1) Fit", ylab = "N. simplex")
+ts.plot(bioTS, main = "Limacina Time Series with AR(1) Fit", ylab = "Limacina")
 lines(fitted(AR1_model), col = "red", lwd = 2)
 
 # residuals plot
@@ -127,7 +103,6 @@ qqline(bio_residuals, col = "red")
 # autocorrelation of residuals
 par(mfrow = c(2, 1))
 acf2(bio_residuals)  # replaces Acf and pacf
-# residuals behave like white noise 
 par(mfrow = c(1, 1))
 
 ## ------------------------------------------ ##
@@ -137,12 +112,12 @@ se <- sqrt(diag(vcov(AR1_model)))[1]  # standard error
 sigma2 <- AR1_model$sigma2
 n <- nrow(bio)
 
-ar_info_df <- data.frame(site = "CCE",
-                         spp = "N_simplex",
+ar_info_df <- data.frame(site = "PAL",
+                         spp = "Limacina_rangii",
                          AR_coef = ar1_coefficient,
                          se = se,
                          sigma2 = sigma2,
                          n = n)
 
 print(ar_info_df)
-#write.csv(ar_info_df, "output/CCE/ARcoef_Nsimplexbio_CCE.csv")
+#write.csv(ar_info_df, "output/PAL/ARcoef_Limacinabio_PAL.csv")
