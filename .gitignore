@@ -11,3 +11,7 @@ raw/CCE/Salps_Socal_springYear.xlsx
 # Ignore discard folders
 output/CCE/discard/
 figures/CCE/discard/
+other_scripts/
+discard/
+output/
+figures/
