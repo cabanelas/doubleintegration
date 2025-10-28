@@ -1,9 +1,8 @@
 ################################################################################
-#############          Pelagic Synthesis           #############################
+#############        LTER Pelagic Synthesis WG     #############################
 #############   NGA - Double Integration Analysis  #############################
 ## by: Alexandra Cabanelas 
 ## created MAR-2025, updated OCT-2025
-
 ################################################################################
 ## Northern Gulf of Alaska LTER
 ## joining all separate taxa csv into one

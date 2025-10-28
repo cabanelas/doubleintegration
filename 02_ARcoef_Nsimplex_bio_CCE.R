@@ -9,7 +9,7 @@
 ## Organism = Nyctiphanes simplex (abundance m2)
 ## 1951-2021
 
-# Script #2 : 02_ARcoef_Nsimplexbio_CCE
+# Script #2 : 02_ARcoef_Nsimplex_bio_CCE
 
 # script to calculate AR coefficient of the biology time series
 
@@ -141,4 +141,4 @@ ar_info_df <- data.frame(site = "CCE",
                          n = n)
 
 print(ar_info_df)
-#write.csv(ar_info_df, "output/CCE/ARcoef_Nsimplexbio_CCE.csv")
+#write.csv(ar_info_df, "output/CCE/ARcoef_Nsimplex_bio_CCE.csv")

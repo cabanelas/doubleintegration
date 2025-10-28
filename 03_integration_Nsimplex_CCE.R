@@ -40,7 +40,7 @@ library(cowplot) #v1.1.3
 ## ------------------------------------------ ##
 #           1) Biology Data -----
 ## ------------------------------------------ ##
-euphs <- read.csv(file.path("raw",
+euphs <- read_csv(file.path("raw",
                             "CCE",
                             "nsimplex_CCE.csv")) %>%
   mutate(taxa = "Nsimplex") %>% 
@@ -48,7 +48,6 @@ euphs <- read.csv(file.path("raw",
   #no sampling = 1967, 1968, 1971, 1973 and 2020
   #real 0s = 1972, 1976, 2010-2012
   complete(Year = seq(min(Year), max(Year), by = 1)) %>%
-  #as.data.frame() %>%
   arrange(Year) %>%
   mutate(
     # --- linear interpolation - these analyses dont like NAs -----
@@ -75,7 +74,7 @@ euphs <- read.csv(file.path("raw",
 ## ------------------------------------------ ##
 #           2) Driver Data -----
 ## ------------------------------------------ ##
-PDO <- read.csv(file.path("raw",
+PDO <- read_csv(file.path("raw",
                           "CCE",
                           "PDO.csv")) %>% # contains up to DEC-2024
   # long format
@@ -95,7 +94,7 @@ PDO <- read.csv(file.path("raw",
     pdo_z = (pdo - mean(pdo, na.rm = TRUE)) / sd(pdo, na.rm = TRUE)
     #or pdo_z = scale(pdo)[, 1]
   ) %>%
-  as.data.frame() %>%
+  #as.data.frame() %>%
   select(time, pdo, pdo_z)
 
 mean(PDO$pdo_z)  # should be close to 0
@@ -135,7 +134,8 @@ PDO <- PDO %>%
     # zscore after integration
     pdo_int_z = (pdo_int - mean(pdo_int, na.rm = TRUE)) / sd(pdo_int, na.rm = TRUE),  
     # or pdo_int_z = scale(PDO$pdo_int)[,1]  
-    time = as.Date(time))
+    time = as.Date(time),
+    tau_months = tau_bio)
 
 ## ------------------------------------------ ##
 #   3) Test Correlations -----
@@ -161,12 +161,13 @@ pval_int <- cor.test(euphs$Anomaly_yr, euphs$pdo_int)$p.value
 #   Store Results -----
 ## ------------------------------------------ ##
 cor_CCE <- data.frame(site = "CCE",
-                       taxa = "Nsimplex",
-                       season = "spring",
-                       cor_Norm = cor_raw, 
-                       cor_Int = cor_int, 
-                       pval_Norm = pval_raw, 
-                       pval_Int = pval_int
+                      taxa = "Nsimplex",
+                      season = "spring",
+                      tau_months = tau_bio,
+                      cor_Norm = cor_raw, 
+                      cor_Int = cor_int, 
+                      pval_Norm = pval_raw, 
+                      pval_Int = pval_int
 )
 cor_CCE
 
@@ -175,10 +176,10 @@ cor_CCE
 ## ------------------------------------------ ##
 
 # save N. simplex Z-score data 
-#write.csv(euphs[, c("date", "Anomaly_yr", "taxa")], "output/CCE/nsimplex_anomalies.csv", row.names = FALSE)
+#write.csv(euphs[, c("date", "Anomaly_yr", "taxa")], "output/CCE/Nsimplex_anomalies.csv", row.names = FALSE)
 
 # save PDO monthly z-scored
-#write.csv(PDO, "output/CCE/PDOint_Nsimplex_CCE.csv", row.names = FALSE)
+#write.csv(PDO, "output/CCE/PDO_int_Nsimplex_CCE.csv", row.names = FALSE)
 
 # save integration results 
 #write.csv(cor_CCE, "output/CCE/cor_Nsimplex_CCE.csv")
@@ -291,6 +292,7 @@ title <- ggdraw() +
 #       final_plot, 
 #       width = 8, height = 8, dpi = 300, 
 #       bg = "white")
+
 plot(euphs$date, euphs$Anomaly_yr, type = "l", col = "black", lwd = 2)
 lines(euphs$date, euphs$pdo_orig, col = "blue", lwd = 2)
 lines(euphs$date, euphs$pdo_int, col = "red", lwd = 2)

@@ -23,7 +23,7 @@
 # Multivariate ENSO Index              = MEI   == 1983 - 2024
 # Southern Annular Mode                = SAM   == 1957 - AUG 2023
 ## -------------------------------------------------------------------------- ##
-# Script #1 : 01_ARcoef_ALL_driver
+# Script #1 : 01_ARcoef_ALL_drivers
 # script to calculate AR coefficient of drivers - loop for all drivers 
 
 ## STEP 1 of Monte Carlo analysis
