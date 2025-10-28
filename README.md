@@ -20,7 +20,7 @@ Scripts should be run in the following order per site:
 * Calculates AR(1) coefficients for physical drivers (e.g., PDO, MEI, ONI, AMO).
 2. ARcoef_bio_SITE.R
 * Calculates AR(1) coefficients for biological time series.
-3. doubleintegration_SITE.R
+3. integration_SITE.R
 * Performs integrations of normalized biological data.
 4. bootstrap_SITE.R
 * Bootstrapping.
