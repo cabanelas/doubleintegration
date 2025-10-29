@@ -178,7 +178,7 @@ MEI <- read.csv(file.path("raw",
   set_names(tolower)
 
 ## --- SAM -----
-SAM <- read.csv(file.path("raw", 
+SAM <- read_csv(file.path("raw", 
                           "PAL",
                           "SAM.csv")) %>% # contains up to aug-2023
   set_names(~ str_to_title(tolower(.x))) %>%
