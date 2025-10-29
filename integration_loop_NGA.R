@@ -1,15 +1,16 @@
 ################################################################################
-#############          Pelagic Synthesis           #############################
-#############             MAR-2025                 #############################
-#############          Double Integration          #############################
+#############        LTER Pelagic Synthesis WG     #############################
+#############   NGA - Double Integration Analysis  #############################
+#############         Integration Calculations     #############################
 ## by: Alexandra Cabanelas 
+## created FEB-2025, updated OCT-2025
 ################################################################################
-##### NGA LTER
-##### Driver = Pacific Decadal Oscillation (PDO)
-##### Biology = Neocalanus cristatus
-##### 6 months? integration time 
-##### season = spring 
-##### years = 1998 - 2022
+## Northern Gulf of Alaska LTER
+## Driver = Pacific Decadal Oscillation (PDO)
+## Biology = N. cristatus
+## TAU = 6 months integration time 
+## season = spring 
+## years = 1998 - 2022
 
 #######   ----    Double Integration Calculations:
 # 1) Biological TS
@@ -21,6 +22,7 @@
 #     b. Temporally average (backwards in time) over characteristic 
 #        time span of organism - 1st integration
 #     c. Temporally average again - 2nd integration 
+# INTEGRATING ONCE IN THIS ANALYSIS*
 # 3) Test correlations between bio TS + each driver TS 
 ################################################################################
 
@@ -33,84 +35,82 @@ library(here)
 #library(tidyr)
 
 ## ------------------------------------------ ##
-#            Biology Data -----
+#           1) Biology Data -----
 ## ------------------------------------------ ##
-ZP <- read.csv(file.path("raw",
-                             "NGA",
-                             "allzooplankton_NGA.csv")) %>%
-  mutate(date = as.Date(paste0(Year, "-03-01")))  %>%
-  arrange(taxa, season, Year) %>%
-  group_by(taxa, season) %>%
-  mutate(Anomaly_yr = approx(Year, Anomaly_yr, xout = Year)$y) %>%
-  ungroup() %>%
-  as.data.frame()
+ZP <- read_csv(file.path("raw",
+                         "NGA",
+                         "allzooplankton_NGA.csv")) %>%
+  select(, -1) %>%
+  mutate(date = as.Date(paste0(Year, "-03-01"))) #%>% #give abundance daymonth to match w index
+  #arrange(taxa, season, Year) %>%
+  #group_by(taxa, season) %>%
+  #mutate(Anomaly_yr = approx(Year, Anomaly_yr, xout = Year)$y) %>%
+  #ungroup() 
 
 ## ------------------------------------------ ##
-#            Driver Data -----
+#           2) Driver Data -----
 ## ------------------------------------------ ##
-PDO <- read.csv(file.path("raw",
+PDO <- read_csv(file.path("raw",
                           "CCE",
-                          "PDO.csv")) %>%
+                          "PDO.csv")) %>% # contains up to DEC-2024
+  # long format
   pivot_longer(cols = Jan:Dec,
                names_to = "month",
                values_to = "pdo") %>%
-  filter(pdo < 99 & Year > 1940) %>%
+  #filtering 10 yrs before bio data
+  filter(Year >= 1941, Year <= 2022, pdo < 99) %>%
   mutate(
+    #turn month into integer
     month = match(month, month.abb),
-    time = as.POSIXct(paste(Year, month, "01"), format = "%Y %m %d", tz = "UTC")  # Convert to POSIXct
+    #convert time to POSIXct
+    time = as.POSIXct(paste(Year, month, "01"), 
+                      format = "%Y %m %d", 
+                      tz = "UTC"),
+    # --- Z-score PDO ----- 
+    pdo_z = (pdo - mean(pdo, na.rm = TRUE)) / sd(pdo, na.rm = TRUE)
+    #or pdo_z = scale(pdo)[, 1]
   ) %>%
-  as.data.frame() %>%
-  select(time, pdo)
+  select(time, pdo, pdo_z)
 
 ## ------------------------------------------ ##
-#     Function for weighted integrations -----
+#  Function for integrations (matching MATLAB/Manu's approach) -----
 ## ------------------------------------------ ##
-# 2) Driver TS 
-#     a. Raw TS (at higher resolution than bio TS)
-#     b. Temporally average (backwards in time) over characteristic 
-#        time span of organism - 1st integration
-#     c. Temporally average again - 2nd integration 
-
-# weighted average
-# exponential weighing - weights decrease for older data points
-# w = e^(t-t_i)/lamba; where lambda controls the decay
-
-calculateIntegrations = function(data, tau = 180, 
-                                 f = function(x, w) {sum(x * w, na.rm = T) / sum(w, na.rm = T)}) {
-  for (n in names(data)[-1]) {
-    data[[paste0(n,'Norm')]] = (data[[n]] - mean(data[[n]], na.rm = T)) / sd(data[[n]]) # norm
-    
-    data[[paste0(n,'Int')]] = NA
-    data[[paste0(n,'DInt')]] = NA
-    
-    for (i in 2:nrow(data)) {
-      #first integration
-      k1 = data[,1] <= data[i,1] & data[,1] > data[i,1] - tau * 86400 # secs
-      tdiff1 = as.numeric(data[i,1] - data[k1,1]) # convert difftime to numeric
-      w1 = exp(-tdiff1 / (tau * 86400 / log(2))) # weights
-      data[[paste0(n,'Int')]][i] = f(data[[paste0(n,'Norm')]][k1], w1)
-      
-      # second integration
-      k2 = data[,1] <= data[i,1] & data[,1] > data[i,1] - tau * 86400
-      tdiff2 = as.numeric(data[i,1] - data[k2,1])
-      w2 = exp(-tdiff2 / (tau * 86400 / log(2)))
-      data[[paste0(n, 'DInt')]][i] = f(data[[paste0(n, 'Int')]][k2], w2)
-    }
-    
-    par(mfrow = c(3,1))
-    plot(data[,1], data[[n]], type = 'l', ylab = n, xlab = '') #original signal
-    plot(data[,1], data[[paste0(n,'Int')]], type = 'l', ylab = paste0(n, 'Int'), xlab = '') #integration1
-    plot(data[,1], data[[paste0(n, 'DInt')]], type = 'l', ylab = paste0(n, ' DInt')) #integration2
+# AR(1) style autoregressive smoothing
+recursive_integration <- function(x, tau, dt = 1) {
+  # calculate autoregressive weight (how much past value is retained)
+  # tau = memory in months, dt = time step 1 month
+  alpha <- 1 - dt / tau # autoregressive weight; alpha bio, Euler
+  y <- numeric(length(x)) #bio response
+  y[1] <- x[1] # initial condition; (MATLAB: o(1) = forc.sig(1))
+  for (i in 1:(length(x) - 1)) {
+    y[i + 1] <- alpha * y[i] + x[i] * dt #Euler forward recursion loop
   }
-  data
+  return(y)
 }
 
-pdoInt <- calculateIntegrations(PDO) #if your R window is too small may give err
-pdoInt$time <- as.Date(pdoInt$time)
+# set parameters
+tau_bio <- 6        # biology memory in months
+dt <- 1              # monthly time steps
 
 ## ------------------------------------------ ##
-#     Correlations -----
+#  Apply integration (biological response) -----
 ## ------------------------------------------ ##
+
+PDO <- PDO %>%
+  mutate(
+    pdo_int = recursive_integration(pdo_z, 
+                                    tau = tau_bio, 
+                                    dt = dt),
+    # zscore after integration
+    pdo_int_z = (pdo_int - mean(pdo_int, na.rm = TRUE)) / sd(pdo_int, na.rm = TRUE),  
+    # or pdo_int_z = scale(PDO$pdo_int)[,1]  
+    time = as.Date(time),
+    tau_months = tau_bio)
+
+## ------------------------------------------ ##
+#   3) Test Correlations -----
+## ------------------------------------------ ##
+
 # initialize lists
 correlation_list <- list()
 p_value_list <- list()
@@ -119,17 +119,19 @@ combinations <- unique(ZP[, c("season", "taxa")])
 
 # loop over combinations of season and taxa
 for (i in seq_len(nrow(combinations))) {
-  season <- combinations[i, "season"]
-  taxa <- combinations[i, "taxa"]
+  #season <- combinations[i, "season"]
+  #taxa <- combinations[i, "taxa"]
+  season <- combinations$season[i]  
+  taxa   <- combinations$taxa[i]    
   
   cat("Processing group:", paste(season, taxa, sep = "_"), "\n")
   
   # filter data for current combo
   group_data <- ZP %>%
-    filter(season == !!season, taxa == !!taxa)
+    dplyr::filter(season == !!season, taxa == !!taxa)
   
-  pdo_driver <- approx(pdoInt$time, pdoInt$pdoNorm, xout = group_data$date)$y
-  interpolated_driver <- approx(pdoInt$time, pdoInt$pdoInt, xout = group_data$date)$y
+  pdo_driver <- approx(PDO$time, PDO$pdo_z, xout = group_data$date)$y
+  interpolated_driver <- approx(PDO$time, PDO$pdo_int_z, xout = group_data$date)$y
   
   # calculate correlations
   correlations <- c(
@@ -155,18 +157,20 @@ labels <- names(correlation_list)
 
 # create df
 results_df <- data.frame(
+  site = "NGA",
   label      = labels,
   cor_Norm   = sapply(correlation_list, `[`, 1),
   cor_Int    = sapply(correlation_list, `[`, 2),
   pval_Norm  = sapply(p_value_list,    `[`, 1),
-  pval_Int   = sapply(p_value_list,    `[`, 2)
+  pval_Int   = sapply(p_value_list,    `[`, 2),
+  tau_months = tau_bio
 )
 
 results_df <- results_df %>%
   separate(label, into = c("season", "taxa"), sep = "_")
 
 rownames(results_df) <- NULL #remove row names
-#write.csv(results_df, "output/NGA/CorAllZP_NGA.csv")
+#write.csv(results_df, "output/NGA/cor_All_ZP_NGA.csv")
 
 ## ------------------------------------------ ##
 #     PLOTS -----
@@ -196,7 +200,7 @@ for (group_name in names(correlation_list)) {
   # --- Normalized Plot ---
   norm_plot <- ggplot() +
     # Driver time series (PDO normalized)
-    geom_line(data = pdoInt, aes(x = time, y = pdoNorm, 
+    geom_line(data = PDO, aes(x = time, y = pdo_z, 
                                  color = "PDO"), linewidth = 1.2) +
     # Abundance time series
     geom_line(data = abundance_data, aes(x = date, y = Anomaly_yr, 
@@ -225,11 +229,11 @@ for (group_name in names(correlation_list)) {
           legend.position = "bottom",
           plot.title = element_blank()) +
     # x-axis settings
-    scale_x_date(breaks = seq(as.Date("1996-01-01"), 
+    scale_x_date(breaks = seq(as.Date("1995-01-01"), 
                                   as.Date("2022-01-01"), 
-                                  by = "4 years"),
+                                  by = "5 years"),
                      date_labels = "%Y", expand = c(0, 0)) +
-    coord_cartesian(xlim = as.Date(c("1996-01-01", "2022-01-01"))) +
+    coord_cartesian(xlim = as.Date(c("1995-01-01", "2022-01-01"))) +
     # manual color legend
     scale_color_manual(values = c("PDO" = "red", "Abundance" = "blue")) +
     labs(y = "PDO")
@@ -237,7 +241,7 @@ for (group_name in names(correlation_list)) {
   # --- Integrated Plot ---
   int_plot <- ggplot() +
     # Driver time series (PDO integrated)
-    geom_line(data = pdoInt, aes(x = time, y = pdoInt, 
+    geom_line(data = PDO, aes(x = time, y = pdo_int_z, 
                                  color = "PDO"), size = 1.2) +
     # Abundance time series
     geom_line(data = abundance_data, aes(x = date, y = Anomaly_yr, 
@@ -263,10 +267,10 @@ for (group_name in names(correlation_list)) {
           legend.key.size = unit(2, "lines"),
           plot.title = element_blank()) +
     # x-axis settings
-    scale_x_date(breaks = seq(as.Date("1996-01-01"), as.Date("2022-01-01"), 
-                              by = "4 years"),
+    scale_x_date(breaks = seq(as.Date("1995-01-01"), as.Date("2022-01-01"), 
+                              by = "5 years"),
                  date_labels = "%Y", expand = c(0, 0)) +
-    coord_cartesian(xlim = as.Date(c("1996-01-01", "2022-01-01"))) +
+    coord_cartesian(xlim = as.Date(c("1995-01-01", "2022-01-01"))) +
     # manual color legend
     labs(y = "Integrated PDO", color = "") +
     scale_color_manual(values = c("PDO" = "red", "Abundance" = "blue"))
@@ -292,8 +296,8 @@ for (group_name in names(correlation_list)) {
   print(final_plot)
   
   # save
-  ggsave(
-    filename = file.path(output_dir, paste0("PDO_NGA_", group_name, ".png")),
-    plot = final_plot, width = 8, height = 8, dpi = 300, bg = "white"
-  )
+  #ggsave(
+  #  filename = file.path(output_dir, paste0("PDO_NGA_", group_name, ".png")),
+  #  plot = final_plot, width = 8, height = 8, dpi = 300, bg = "white"
+  #)
 }
