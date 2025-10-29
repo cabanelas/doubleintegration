@@ -1,17 +1,19 @@
 ################################################################################
-#############          Pelagic Synthesis           #############################
-#############                 2024                 #############################
-#############         CCE - Double Integration     #############################
+#############        LTER Pelagic Synthesis WG     #############################
+#############   CCE - Double Integration Analysis  #############################
+#############              Bootstrapping           #############################
 ## by: Alexandra Cabanelas 
+## created 2024, updated OCT-2025
 ################################################################################
-## CCE LTER
+## California Current Ecosystem LTER
 ## Driver = Pacific Decadal Oscillation (PDO)
 ## Biology = Nyctiphanes simplex (abundance m2)
+## TAU = 2-year integration time 
 ## season = spring (Feb, Mar, Apr, May)
 ## years = 1951 - 2021
 ## night tows only
 
-# Script #4 : boostrap_CCE
+# Script #4 : bootstrap_CCE
 
 # script to generate two red-noise time series with the estimate AR coeff            
 
@@ -56,13 +58,13 @@ library(signal)
 #            Data -----
 ## ------------------------------------------ ##
 AR_driver <- read.csv(file.path("output",
-                                "CCE",
-                                "ARcoef_PDOdriver_CCE.csv"), 
-                      header = T) # created in script#1
+                                "ARcoef_ALL_drivers.csv"), 
+                      header = T) %>% # created in script#1
+  dplyr::filter(driver == "PDO") 
 
 AR_biology <- read.csv(file.path("output",
                                  "CCE",
-                                 "ARcoef_Nsimplexbio_CCE.csv"), 
+                                 "ARcoef_Nsimplex_bio_CCE.csv"), 
                        header = T) #created in script#2
 
 original_correlations <- read.csv(file.path("output",
@@ -72,14 +74,14 @@ original_correlations <- read.csv(file.path("output",
 # for sensitivity and plots..
 PDO <- read.csv(file.path("output",
                           "CCE",
-                          "PDOint_Nsimplex_CCE.csv"), 
+                          "PDO_int_Nsimplex_CCE.csv"), #created in script#3
                 header = T) %>%
   mutate(time = as.Date(time, 
-                        format = "%Y-%m-%d")) #created in script#3
+                        format = "%Y-%m-%d")) 
 
 euphs <- read.csv(file.path("output",
                             "CCE",
-                            "nsimplex_anomalies.csv")) %>% #created in script#3
+                            "Nsimplex_anomalies.csv")) %>% #created in script#3
   mutate(date = as.Date(date))
 
 ## ------------------------------------------ ##
@@ -102,13 +104,11 @@ recursive_integration <- function(x, tau, dt = 1) {
 ## ------------------------------------------ ##
 
 #  --- Parallelize to speed up -----
-parallel::detectCores()
-parallelly::availableCores()
+parallel::detectCores() #parallelly::availableCores()
 numCores <- detectCores() - 2
 cl <- makeCluster(numCores)
 registerDoParallel(cl) 
-
-set.seed(123)  # ensure reproducibility
+doRNG::registerDoRNG(123)  # reproducible parallel bootstrap
 
 #  --- define AR(1) coefficients and sample sizes -----
 ar_coef_driver <- as.numeric(AR_driver$AR_coef)  #same as AR_driver$AR_coef[1] 
@@ -184,7 +184,9 @@ final_results <- data.frame(
   
   # Empirical/Monte Carlo p-values
   pval_pair = mean(abs(cor_results$cor_Norm) >= abs(original_correlations$cor_Norm)),
-  pval_pair_integrated = mean(abs(cor_results$cor_Int) >= abs(original_correlations$cor_Int))
+  pval_pair_integrated = mean(abs(cor_results$cor_Int) >= abs(original_correlations$cor_Int)),
+  
+  tau_months = tau_bio
 )
 
 # Flag significance based on bootstrap confidence intervals
@@ -196,182 +198,7 @@ final_results <- final_results %>%
       original_cor_int > ci_pair_integrated_upper
   )
 final_results
-#write.csv(final_results, "output/CCE/boot_results_NsimplexCCE.csv")
-
-## ------------------------------------------ ##
-# Sensitivity Analysis: Vary τ and compute correlation
-## ------------------------------------------ ##
-
-#parameters
-tau_range <- seq(6, 120, by = 3)  # 0.5-10 years in 3month steps
-num_sens_iterations <- 1000
-dt <- 1 
-
-# parallel 
-numCores <- parallel::detectCores() - 2
-cl <- makeCluster(numCores)
-registerDoParallel(cl)
-doRNG::registerDoRNG(123)  # reproducible parallel bootstrap
-
-# --- 1. Bootstrapped Significance Envelope ---
-#testing how autocorrelation inflates correlation with increasing tau
-# initialize results
-significance_envelope <- data.frame(tau = tau_range, cor_95 = NA)
-
-# loop over τ values
-for (i in seq_along(tau_range)) {
-  tau_i <- tau_range[i]
-  
-  # Bootstrap 
-  cor_boot <- foreach(k = 1:num_sens_iterations, .combine = c, .packages = "stats") %dorng% {
-    # Generate red-noise time series
-    red_noise_drv <- arima.sim(n = n_driver, model = list(ar = ar_coef_driver))
-    red_noise_bio <- arima.sim(n = n_bio, model = list(ar = ar_coef_bio))
-    
-    # normalize
-    driver_norm <- scale(red_noise_drv)[, 1]
-    
-    # integrate
-    driver_int <- recursive_integration(driver_norm, tau = tau_i, dt = dt)
-    driver_int_z <- scale(driver_int)[, 1]
-    
-    # Interpolate driver to match biology time points
-    idx_yearly <- seq(1, n_driver, length.out = n_bio)
-    #interpolated_driver <- approx(1:n_driver, driver_norm, xout = idx_yearly)$y
-    interpolated_int <- approx(1:n_driver, driver_int_z, xout = idx_yearly)$y
-    
-    cor(interpolated_int, red_noise_bio, use = "complete.obs")
-  }
-  
-  # Extract 95th percentile
-  significance_envelope$cor_95[i] <- quantile(cor_boot, probs = 0.95, 
-                                              na.rm = TRUE)
-}
-# stop parallel cluster
-stopCluster(cl)
-# convert tau to years
-significance_envelope$tau_years <- significance_envelope$tau / 12
-
-# --- 2. Integration Sensitivity ---
-#initialize results df
-tau_sensitivity <- data.frame(tau = tau_range, cor_int = NA_real_) 
-
-# Loop over tau values
-for (i in seq_along(tau_range)) {
-  tau_i <- tau_range[i]
-  
-  # integrate PDO
-  pdo_int_i <- recursive_integration(PDO$pdo_z, tau = tau_i, dt = 1)
-  # z-score
-  pdo_int_z_i <- as.numeric(scale(pdo_int_i)) 
-  
-  # Interpolate to biological sampling dates
-  #PDO_raw_interp <- approx(PDO$time, PDO$pdo_z, xout = euphs$date, rule = 1)$y
-  PDO_int_interp <- approx(PDO$time, pdo_int_z_i, xout = euphs$date, rule = 1)$y
-  
-  # Compute correlation with biological anomalies
-  #cor_raw <- cor(PDO_raw_interp, euphs$Anomaly_yr, use = "complete.obs")
-  cor_int <- cor(PDO_int_interp, euphs$Anomaly_yr, use = "complete.obs")
-  
-  # Store result
-  #tau_sensitivity$cor_raw[i] <- cor_raw
-  tau_sensitivity$cor_int[i] <- cor_int
-}
-# convert tau to years
-tau_sensitivity$tau_years <- tau_sensitivity$tau / 12
-
-plot(tau_range / 12, tau_sensitivity$cor_int, type = "l", lwd = 2, col = "black", 
-     xlab = "Timescale τ (years)", 
-     ylab = "Correlation",
-     main = "Sensitivity to τ (biological memory)")
-
-# --- 3. Low-pass Filter Sensitivity --- CHECKKK THIS PART
-lowpass_sensitivity <- data.frame(tau = tau_range, cor = NA)
-
-for (i in seq_along(tau_range)) {
-  tau_i <- tau_range[i]
-  cutoff_freq <- 1 / tau_i  # cycles per month
-  
-  # Butterworth low-pass filter
-  bf <- butter(n = 2, W = cutoff_freq, type = "low", plane = "z")
-  pdo_filtered <- filtfilt(bf, PDO$pdo_z)
-  pdo_filtered_z <- as.numeric(scale(pdo_filtered))
-  
-  PDO_interp <- approx(PDO$time, pdo_filtered_z, xout = euphs$date, rule = 2)$y
-  cor_i <- cor(PDO_interp, euphs$Anomaly_yr, use = "complete.obs")
-  lowpass_sensitivity$cor[i] <- cor_i
-}
-# convert tau to years
-lowpass_sensitivity$tau_years <- tau_range / 12
-
-#  results
-#print(tau_sensitivity)
-#cor_threshold_95 <- quantile(cor_results$cor_Int, probs = 0.95)
-# Merge significance envelope with tau_sensitivity
-tau_sensitivity <- tau_sensitivity %>%
-  left_join(significance_envelope %>% 
-              select(tau_years, cor_95), 
-            by = "tau_years") %>%
-  mutate(significant = cor_int > cor_95)
-
-# could skip if not ing lowpass
-combined_df <- rbind(
-  data.frame(tau = tau_sensitivity$tau_years, 
-             cor = tau_sensitivity$cor, 
-             sig_95 = tau_sensitivity$cor_95,
-             significant = tau_sensitivity$significant,
-             Type = "Integrated PDO"),
-  data.frame(tau = lowpass_sensitivity$tau_years, 
-             cor = lowpass_sensitivity$cor,
-             sig_95 = NA,  # not applicable
-             significant = NA,
-             Type = "Low-pass PDO")
-)
-
-## ------------------------------------------ ##
-# Sensitivity plots
-## ------------------------------------------ ##
-
-ggplot(tau_sensitivity, aes(x = tau_years, y = cor)) +
-  geom_hline(yintercept = cor_threshold_95, linetype = "dashed", 
-             color = "gray40") +
-  annotate("rect", xmin = 0.5, xmax = 2, ymin = -Inf, ymax = Inf, 
-           alpha = 0.5, fill = "gray") +
-  geom_line(color = "black", linewidth = 1.2) +
-  geom_point(color = "blue", size = 2) +
-  geom_hline(yintercept = cor_raw, color = "red", linewidth = 1.2) +
-  labs(title = expression(italic(N.*simplex)~"sensitivity to biological damping timescale"),
-       subtitle = paste("Black = integrated PDO; Red = raw PDO\nDashed line = 95% significance (r =", round(cor_threshold_95, 2), ")"),
-       x = expression(paste("Biological memory ", tau[bio], " [years]")),
-       y = "Correlation coefficient (r)",
-       caption = "CCE – spring") +
-  theme_minimal(base_size = 14)
-
-peak <- tau_sensitivity[which.max(tau_sensitivity$cor), ]
-ggplot(combined_df, aes(x = tau, y = cor, color = Type)) +
-  geom_line(linewidth = 1.2) +
-  geom_point(size = 2) +
-  geom_hline(yintercept = cor_threshold_95, 
-             linetype = "dashed", color = "gray40") +
-  annotate("rect", xmin = 0.5, xmax = 2, ymin = -Inf, ymax = Inf, 
-           alpha = 0.3, fill = "gray") +
-  geom_point(data = peak, aes(x = tau_years, y = cor), shape = 8, size = 3, color = "black") + 
-  scale_color_manual(values = c("Integrated PDO" = "black", 
-                                "Low-pass PDO" = "red")) +
-  labs(title = expression(italic(N.*simplex)~"sensitivity to biological damping timescale"),
-       subtitle = paste("Dashed line = 95% significance (r =", round(cor_threshold_95, 2), ")"),
-       x = expression(paste("Timescale ", tau, " [years]")),
-       y = "Correlation coefficient (r)",
-       caption = "CCE – spring") +
-  theme_minimal(base_size = 14) +
-  theme(legend.position = "top",
-        legend.title = element_blank()) +
-  scale_x_continuous(
-    breaks = seq(0, 10, by = 2),
-    limits = c(0, 10)
-  ) 
-
-
+#write.csv(final_results, "output/CCE/boot_results_Nsimplex_CCE.csv")
 
 ## ------------------------------------------ ##
 #     Plot PDFs -----
@@ -443,6 +270,26 @@ boxplot(cor_results$cor_Norm, cor_results$cor_Int,
         col = c("lightblue", "lightgreen"),
         main = "Bootstrap Correlation Distributions",
         ylab = "Correlation (r)")
+
+
+summary_df <- data.frame(
+  Type = c("Raw", "Integrated"),
+  Observed = c(final_results$original_cor_norm, final_results$original_cor_int),
+  MeanNull = c(final_results$cor_coeffs_pair_mean, final_results$cor_coeffs_pair_integrated_mean),
+  CI_lower = c(final_results$ci_pair_lower, final_results$ci_pair_integrated_lower),
+  CI_upper = c(final_results$ci_pair_upper, final_results$ci_pair_integrated_upper)
+)
+
+ggplot(summary_df, aes(x = Type)) +
+  geom_pointrange(aes(y = MeanNull, ymin = CI_lower, ymax = CI_upper),
+                  color = "grey50", size = 1.2) +
+  geom_point(aes(y = Observed), color = "blue", size = 3) +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  labs(
+    title = "Observed vs. null mean correlations",
+    y = "Correlation coefficient (r)"
+  ) +
+  theme_minimal(base_size = 14)
 
 ## ------------------------------------------ ##
 #     Plots -----
@@ -552,7 +399,6 @@ title <- ggdraw() +
              size = 18) +
   theme(plot.background = element_rect(fill = "transparent"))
 
-
 # combine title and plots
 (final_plot <- plot_grid(title, combined_plots, legend, ncol = 1, 
                          rel_heights = c(0.07, 0.8, 0.07))) 
@@ -563,34 +409,157 @@ title <- ggdraw() +
 #       width = 8, height = 8, dpi = 300, 
 #       bg = "white")
 
+## ------------------------------------------ ##
+# Sensitivity Analysis: Vary tau and compute correlation
+## ------------------------------------------ ##
 
+## --- testing correlation at different taus -----
+tau_values <- seq(1, 120, by = 1)  # memory from 1 to 120 months (10 years)
 
+cor_by_tau <- data.frame()
 
-####
-run_bootstrap <- function(ar_coef_driver, ar_coef_bio, n_driver, n_bio, tau_bio, num_iterations = 10000) {
-  # bootstrap logic here
-  return(final_results)
+for (tau in tau_values) {
+  # integrate PDO
+  pdo_int <- recursive_integration(PDO$pdo_z, tau = tau, dt = 1)
+  pdo_int_z <- scale(pdo_int)[, 1]
+  
+  # interpolate to match biological sampling dates
+  pdo_interp <- approx(PDO$time, pdo_int_z, xout = euphs$date)$y
+  
+  # calculate correlation
+  cor_val <- cor(euphs$Anomaly_yr, pdo_interp, use = "complete.obs")
+  
+  cor_by_tau <- rbind(cor_by_tau, data.frame(tau_months = tau, cor = cor_val))
 }
-#####
 
-## extra PDF plot
-summary_df <- data.frame(
-  Type = c("Raw", "Integrated"),
-  Observed = c(final_results$original_cor_norm, final_results$original_cor_int),
-  MeanNull = c(final_results$cor_coeffs_pair_mean, final_results$cor_coeffs_pair_integrated_mean),
-  CI_lower = c(final_results$ci_pair_lower, final_results$ci_pair_integrated_lower),
-  CI_upper = c(final_results$ci_pair_upper, final_results$ci_pair_integrated_upper)
-)
+## ------------------------------------------ ##
+# Sensitivity plots
+## ------------------------------------------ ##
 
-ggplot(summary_df, aes(x = Type)) +
-  geom_pointrange(aes(y = MeanNull, ymin = CI_lower, ymax = CI_upper),
-                  color = "grey50", size = 1.2) +
-  geom_point(aes(y = Observed), color = "blue", size = 3) +
-  geom_hline(yintercept = 0, linetype = "dotted") +
+ggplot(cor_by_tau, aes(x = tau_months / 12, y = cor)) +
+  geom_line(color = "black", linewidth = 1.2) +
+  annotate("rect", xmin = 0.5, xmax = 2, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
   labs(
-    title = "Observed vs. null mean correlations",
-    y = "Correlation coefficient (r)"
-  ) +
+       x = expression(paste("Timescale ", tau, " [years]")),#Biological memory
+       y = "Correlation",
+       subtitle = expression(italic(N.simplex)),
+       title = "Observed correlation vs. integration timescale") +
   theme_minimal(base_size = 14)
 
+plot(tau_values / 12, cor_by_tau$cor, type = "l", lwd = 2, col = "black", 
+     xlab = "Timescale τ (years)", 
+     ylab = "Correlation",
+     main = "Sensitivity to τ (biological memory)")
 
+
+
+
+
+################################################################################
+## --- i dont think i need this -----
+# Parallelize to speed up
+cl <- makeCluster(numCores)
+registerDoParallel(cl)
+doRNG::registerDoRNG(123)  # reproducible parallel bootstrap
+
+bootstrap_summary <- data.frame()
+num_iterations <- 10
+
+for (tau in tau_values) {
+  cat("Bootstrapping tau =", tau, "months\n")
+  
+  cor_results <- foreach(k = 1:num_iterations, .combine = rbind, .packages = "stats") %dorng% {
+    # simulate red-noise driver and biology
+    red_noise_driver <- arima.sim(n = n_driver, model = list(ar = ar_coef_driver))
+    red_noise_bio    <- arima.sim(n = n_bio, model = list(ar = ar_coef_bio))
+    
+    driver_norm <- scale(red_noise_driver)[, 1]
+    driver_int <- recursive_integration(driver_norm, tau = tau, dt = 1)
+    driver_int_z <- scale(driver_int)[, 1]
+    
+    idx_yearly <- seq(1, n_driver, length.out = n_bio)
+    driver_interp <- approx(1:n_driver, driver_int_z, xout = idx_yearly)$y
+    
+    cor(driver_interp, red_noise_bio, use = "complete.obs")
+  }
+  
+  bootstrap_summary <- rbind(bootstrap_summary, data.frame(
+    tau_months = tau,
+    cor_null_mean = mean(cor_results),
+    cor_null_ci_lower = quantile(cor_results, 0.025),
+    cor_null_ci_upper = quantile(cor_results, 0.975)
+  ))
+}
+stopCluster(cl)
+
+# merge both results
+plot_df <- merge(cor_by_tau, bootstrap_summary, by = "tau_months")
+
+ggplot(plot_df, aes(x = tau_months / 12)) +
+  geom_line(aes(y = cor), color = "black", linewidth = 1.2) +
+  geom_line(aes(y = cor_null_mean), color = "red", linewidth = 1.2) +
+  geom_ribbon(aes(ymin = cor_null_ci_lower, ymax = cor_null_ci_upper), fill = "red", alpha = 0.2) +
+  geom_hline(yintercept = 0.5, linetype = "dashed", color = "gray40") +
+  annotate("rect", xmin = 0.5, xmax = 2, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = "blue") +
+  labs(x = "Biological memory τ (years)",
+       y = "Correlation",
+       title = "Observed vs. null correlation across integration timescales") +
+  theme_minimal(base_size = 14)
+################################################################################
+## --- i dont think i need this -----
+# if i want uncertainty bands around observed r(tau) i can use block bootsrp
+cl <- makeCluster(numCores)
+registerDoParallel(cl)
+doRNG::registerDoRNG(123)  # reproducible parallel bootstrap
+
+bootstrap_obs_summary <- data.frame()
+for (tau in tau_values) {
+  cat("Bootstrapping observed correlation at tau =", tau, "months\n")
+  
+  # Integrate PDO
+  pdo_int <- recursive_integration(PDO$pdo_z, tau = tau, dt = 1)
+  pdo_int_z <- scale(pdo_int)[, 1]
+  pdo_interp <- approx(PDO$time, pdo_int_z, xout = euphs$date)$y
+  
+  # Bootstrap correlation
+  cor_boot <- foreach(k = 1:1000, .combine = c, .packages = "stats") %dorng% {
+    idx <- sample(seq_along(pdo_interp), replace = TRUE)
+    cor(pdo_interp[idx], euphs$Anomaly_yr[idx], use = "complete.obs")
+  }
+  
+  bootstrap_obs_summary <- rbind(bootstrap_obs_summary, data.frame(
+    tau_months = tau,
+    cor_obs_mean = mean(cor_boot),
+    cor_obs_ci_lower = quantile(cor_boot, 0.025),
+    cor_obs_ci_upper = quantile(cor_boot, 0.975)
+  ))
+}
+stopCluster(cl)
+
+plot_df1 <- left_join(cor_by_tau, bootstrap_obs_summary, by = "tau_months")
+
+ggplot(plot_df1, aes(x = tau_months / 12)) +
+  geom_line(aes(y = cor), color = "black", linewidth = 1.2) +
+  geom_ribbon(aes(ymin = cor_obs_ci_lower, ymax = cor_obs_ci_upper), 
+              fill = "black", alpha = 0.2) +
+  #geom_hline(yintercept = 0, linetype = "dashed", color = "gray40") +
+  annotate("rect", xmin = 0.5, xmax = 2, ymin = -Inf, ymax = Inf, 
+           alpha = 0.1, fill = "blue") +
+  labs(x = "Biological memory τ (years)",
+       y = "Correlation with N.simplex anomalies",
+       title = "Observed correlation with bootstrap confidence intervals") +
+  theme_minimal(base_size = 14)
+
+ggplot(plot_df, aes(x = tau_months / 12)) +
+  geom_line(aes(y = cor), color = "black", linewidth = 1.2) +
+  geom_ribbon(aes(ymin = cor_null_ci_lower, ymax = cor_null_ci_upper), 
+              fill = "black", alpha = 0.2) +
+  #geom_hline(yintercept = 0, linetype = "dashed", color = "gray40") +
+  geom_line(aes(y = cor_null_ci_upper), color = "red", linetype = "dashed", linewidth = 1.2) +
+  annotate("rect", xmin = 0.5, xmax = 2, ymin = -Inf, ymax = Inf, 
+           alpha = 0.1, fill = "blue") +
+  labs(x = "Biological memory τ (years)",
+       y = "Correlation with N.simplex anomalies",
+       title = "Observed correlation with bootstrap confidence intervals") +
+  theme_minimal(base_size = 14)
+###########################################################
