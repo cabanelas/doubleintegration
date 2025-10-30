@@ -3,10 +3,14 @@
 .RData
 .Ruserdata
 raw/CCE/COPEPOD_CalanusPacificusYear.xlsx
+raw/CCE/COPEPODA_CalanusPacificusYear.xlsx
 raw/CCE/Euphausiids_CCE.csv
 raw/CCE/Euphausiids_Pyrosomes_CCE_Ohman_lab_25Oct2023.xlsx
 raw/CCE/EUthecosomesYear.xlsx
 raw/CCE/Salps_Socal_springYear.xlsx
+raw/CCE/euphs_CCE_2010.csv
+
+raw/NGA/allzooplankton_NGA_old.csv
 
 # Ignore discard folders
 output/CCE/discard/
